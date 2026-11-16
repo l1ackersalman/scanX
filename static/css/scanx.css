@@ -321,6 +321,12 @@ main.content {
 .log-warning { color: var(--sx-warning); }
 .log-error { color: var(--sx-danger); }
 .log-progress { color: var(--sx-accent); }
+.log-subfinder { color: #3b82f6; }
+.log-assetfinder { color: #a855f7; }
+.log-chaos { color: #f59e0b; }
+.log-crt { color: #ec4899; }
+.log-live { color: #22c55e; }
+.log-time { color: #06b6d4; }
 
 /* =====================================================================
    Auto-refresh Countdown Banner

@@ -158,13 +158,51 @@
 
       // Detect log patterns and add classes
       let cssClass = 'log-info';
-      if (escaped.includes('[✔]') || escaped.includes('[+]') || escaped.includes('SUCCESS')) {
+      const lower = escaped.toLowerCase();
+
+      // Header / status icons
+      if (escaped.includes('[✔]')) {
         cssClass = 'log-success';
-      } else if (escaped.includes('[!]') || escaped.includes('[✘]') || escaped.includes('FAILED') || escaped.includes('ERROR')) {
+      }
+      else if (escaped.includes('[✘]') || escaped.includes('[!]')) {
         cssClass = 'log-error';
-      } else if (escaped.includes('⏱') || escaped.includes('Total Execution')) {
-        cssClass = 'log-progress';
-      } else if (escaped.includes('found') || escaped.includes('domains') || escaped.includes('Scanning')) {
+      // Tool-specific results
+      else if (lower.includes('subfinder')) {
+        cssClass = 'log-subfinder';
+      }
+      else if (lower.includes('assetfinder')) {
+        cssClass = 'log-assetfinder';
+      }
+      else if (lower.includes('chaos')) {
+        cssClass = 'log-chaos';
+      }
+      else if (lower.includes('crt.sh') || lower.includes('crt ')) {
+        cssClass = 'log-crt';
+      }
+      // Live / unique domain counts
+      else if (lower.includes('live domains') || lower.includes('live.txt')) {
+        cssClass = 'log-live';
+      }
+      else if (lower.includes('unique domains') || lower.includes('alldomains')) {
+        cssClass = 'log-success';
+      }
+      // HTTP results
+      else if (lower.includes('success')) {
+        cssClass = 'log-live';
+      }
+      else if (lower.includes('failed')) {
+        cssClass = 'log-error';
+      }
+      // Execution time
+      else if (lower.includes('total execution') || lower.includes('⏱')) {
+        cssClass = 'log-time';
+      }
+      // Errors
+      else if (escaped.includes('ERROR') || escaped.includes('error')) {
+        cssClass = 'log-error';
+      }
+      // Progress indicators ([+], found, domains, scanning)
+      else if (escaped.includes('[+]') || lower.includes('found') || lower.includes('domains') || lower.includes('scanning')) {
         cssClass = 'log-progress';
       }
 
