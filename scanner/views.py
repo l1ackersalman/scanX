@@ -29,6 +29,24 @@ from core.validators import validate_domain
 logger = logging.getLogger(__name__)
 
 
+def get_status_class(status):
+    """Return CSS class for HTTP status code badge."""
+    s = str(status)
+    if s.startswith("2"):
+        return "http-status-success"   # green
+    elif s.startswith("3"):
+        return "http-status-redirect"  # yellow/amber
+    elif s == "403":
+        return "http-status-forbidden" # orange
+    elif s == "404":
+        return "http-status-not-found" # red
+    elif s.startswith("5"):
+        return "http-status-server-error"  # purple
+    elif s.startswith("4"):
+        return "http-status-client-error"  # red for other 4xx
+    return "http-status-unknown"
+
+
 def dashboard(request):
     """
     Main dashboard: scan form + scan history.
@@ -95,7 +113,7 @@ def scan_detail(request, scan_id):
     context = {
         "scan": scan,
         "httpx_results": [
-            {**r, "status_class": "status-success" if str(r.get("status", "")).startswith(("2", "3")) else "status-danger"}
+            {**r, "status_class": get_status_class(r.get("status", ""))}
             for r in (scan.httpx_results or [])
         ],
         "page_title": f"Scan: {scan.domain}",

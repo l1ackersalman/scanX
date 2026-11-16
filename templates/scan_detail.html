@@ -31,12 +31,32 @@
     text-transform: uppercase;
     letter-spacing: 0.025em;
   }
-  .http-badge-success {
+  .http-status-success {
     background: rgba(53, 183, 121, 0.1);
     color: var(--sx-success);
     border: 1px solid rgba(53, 183, 121, 0.3);
   }
-  .http-badge-danger {
+  .http-status-redirect {
+    background: rgba(230, 162, 60, 0.1);
+    color: var(--sx-warning);
+    border: 1px solid rgba(230, 162, 60, 0.3);
+  }
+  .http-status-forbidden {
+    background: rgba(230, 126, 34, 0.1);
+    color: #e67e22;
+    border: 1px solid rgba(230, 126, 34, 0.3);
+  }
+  .http-status-not-found {
+    background: rgba(227, 93, 106, 0.1);
+    color: var(--sx-danger);
+    border: 1px solid rgba(227, 93, 106, 0.3);
+  }
+  .http-status-server-error {
+    background: rgba(155, 89, 182, 0.1);
+    color: #9b59b6;
+    border: 1px solid rgba(155, 89, 182, 0.3);
+  }
+  .http-status-client-error {
     background: rgba(227, 93, 106, 0.1);
     color: var(--sx-danger);
     border: 1px solid rgba(227, 93, 106, 0.3);
@@ -161,7 +181,7 @@
                 <tr style="border-bottom: 1px solid var(--sx-border);">
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ result.url }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: center;">
-                    <span class="http-badge {% if result.status_class == 'status-success' %}http-badge-success{% else %}http-badge-danger{% endif %}">{{ result.status }}</span>
+                    <span class="http-badge {{ result.status_class }}">{{ result.status }}</span>
                   </td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis;">{{ result.title }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: center;">
