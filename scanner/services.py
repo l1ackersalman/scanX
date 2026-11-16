@@ -116,15 +116,25 @@ class ScanExecutor:
                     continue
                 try:
                     entry = json.loads(line)
+                    tech_list = entry.get("tech-detect")
+                    if tech_list is None:
+                        tech_list = entry.get("tech")
+                    if tech_list is None:
+                        tech_list = entry.get("technologies")
+                    if tech_list is None:
+                        tech_list = entry.get("tech_detect")
+                    if tech_list is None:
+                        # Some httpx versions output tech as comma-separated string in 'tech-detect'
+                        tech_raw = entry.get("tech-detect", "")
+                        if isinstance(tech_raw, str) and tech_raw:
+                            tech_list = [t.strip() for t in tech_raw.split(",") if t.strip()]
+                        else:
+                            tech_list = []
                     results.append({
                         "url": entry.get("url", ""),
                         "status": entry.get("status-code", entry.get("status_code", "N/A")),
                         "title": entry.get("title", ""),
-                        "tech": entry.get("tech-detect")
-                        or entry.get("tech")
-                        or entry.get("technologies")
-                        or entry.get("tech_detect")
-                        or [],
+                        "tech": tech_list or [],
                         "server": entry.get("server", ""),
                         "ip": entry.get("ip", ""),
                         "cname": entry.get("cname", ""),
