@@ -13,13 +13,6 @@ fi
 # Start timing the script
 start_time=$(date +%s)
 
-# Header
-figlet "scanX"
-echo -e "\e[1;36m===========================================================\e[0m"
-echo -e "\e[1;32m    An Automated Bash Script For Advanced Reconnaissance \e[1;31m(Beta)\e[0m"
-echo -e "\e[1;36m===========================================================\e[0m\n"
-echo -e "\e[1;32m                                         - Developed by Salman Chowdhury Tasin\e[0m\n"
-
 # Help message
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     echo "Usage: $0 <domain>"
@@ -50,10 +43,10 @@ done
 if [ -d "$dir_name" ]; then
     echo "[!] Directory $dir_name already exists. Creating a new directory..."
     count=1
-    while [ -d "${domain}-$(printf "%02d" $count)" ]; do
+    while [ -d "${domain}-$(printf "%02d $count)" ]; do
         ((count++))
     done
-    dir_name="${domain}-$(printf "%02d" $count)"
+    dir_name="${domain}-$(printf "%02d $count)"
 fi
 
 mkdir -p "$dir_name" || { echo "[✘] Failed to create directory. Exiting."; exit 1; }
@@ -75,7 +68,7 @@ echo "[+] $(wc -l < assetfinder.txt) domains found from assetfinder."
 chaos -d "$domain" -key 01691ef6-0ea0-4525-93fe-0f158d94ec16 -silent > chaos.txt
 echo "[+] $(wc -l < chaos.txt) domains found from chaos."
 
-crt -d "$domain" > crt.txt
+crt -s "$domain" > crt.txt
 echo "[+] $(wc -l < crt.txt) domains found from crt.sh."
 
 sort -u subfinder.txt assetfinder.txt chaos.txt crt.txt > alldomains.txt
@@ -86,10 +79,6 @@ dnsx -l alldomains.txt -silent -o live.txt > /dev/null 2>&1
 echo "[+] $(wc -l < live.txt) live domains found."
 
 /home/insomniax/go/bin/httpx -sc -title -tech-detect -server -ip -cname -probe -silent -o httpx.txt -l live.txt > /dev/null 2>&1
-
-echo -e "[+] $(grep -c SUCCESS httpx.txt) \e[1;32mSUCCESS\e[0m"
-
-echo -e "[+] $(grep -c FAILED httpx.txt) \e[1;31mFAILED\e[0m"
 
 # ========================[ FINISH ]========================
 
