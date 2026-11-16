@@ -150,24 +150,18 @@
     }
 
     formatLogLine(line) {
-      // Escape HTML
+      // Escape HTML properly
       const escaped = line
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
       // Detect log patterns and add classes
       let cssClass = 'log-info';
       const lower = escaped.toLowerCase();
 
-      // Header / status icons
-      if (escaped.includes('[✔]')) {
-        cssClass = 'log-success';
-      }
-      else if (escaped.includes('[✘]') || escaped.includes('[!]')) {
-        cssClass = 'log-error';
-      // Tool-specific results
-      else if (lower.includes('subfinder')) {
+      // Tool-specific results (checked first before generic patterns)
+      if (lower.includes('subfinder')) {
         cssClass = 'log-subfinder';
       }
       else if (lower.includes('assetfinder')) {
@@ -178,6 +172,13 @@
       }
       else if (lower.includes('crt.sh') || lower.includes('crt ')) {
         cssClass = 'log-crt';
+      }
+      // Status icons
+      else if (escaped.includes('[✔]')) {
+        cssClass = 'log-success';
+      }
+      else if (escaped.includes('[✘]') || escaped.includes('[!]')) {
+        cssClass = 'log-error';
       }
       // Live / unique domain counts
       else if (lower.includes('live domains') || lower.includes('live.txt')) {
@@ -197,16 +198,15 @@
       else if (lower.includes('total execution') || lower.includes('⏱')) {
         cssClass = 'log-time';
       }
-      // Errors
+      // Generic errors
       else if (escaped.includes('ERROR') || escaped.includes('error')) {
         cssClass = 'log-error';
       }
-      // Progress indicators ([+], found, domains, scanning)
+      // Progress indicators ([+], found, domains, scanning) - catch-all last
       else if (escaped.includes('[+]') || lower.includes('found') || lower.includes('domains') || lower.includes('scanning')) {
         cssClass = 'log-progress';
       }
 
-      // Extract timestamp if present (optional)
       return `<span class="${cssClass}">${escaped}</span>`;
     }
 
