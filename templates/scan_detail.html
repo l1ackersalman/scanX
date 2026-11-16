@@ -177,16 +177,7 @@
     <section aria-labelledby="httpx-results-title">
       <div class="card" aria-labelledby="httpx-results-title">
         <div class="card-head">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <h2 id="httpx-results-title" class="card-title" style="margin: 0;">HTTP Results</h2>
-            <select id="status-filter" style="padding: var(--sx-space-1) var(--sx-space-2); font-size: var(--sx-text-xs); background: var(--sx-surface); border: 1px solid var(--sx-border); color: var(--sx-text-primary); border-radius: var(--sx-radius-control);">
-              <option value="all">All Status Codes</option>
-              <option value="2xx">2xx (Success)</option>
-              <option value="3xx">3xx (Redirect)</option>
-              <option value="4xx">4xx (Client Error)</option>
-              <option value="5xx">5xx (Server Error)</option>
-            </select>
-          </div>
+          <h2 id="httpx-results-title" class="card-title" style="margin: 0;">HTTP Results</h2>
         </div>
         <div class="card-body" style="padding: 0;">
           <div style="overflow-x: auto;">
@@ -292,34 +283,4 @@
       };
     }
 
-    // HTTP Results dropdown filter
-    const filterSelect = document.getElementById('status-filter');
-    const tableRows = document.querySelectorAll('.log-viewer tbody tr');
-
-    filterSelect.addEventListener('change', () => {
-      const filter = filterSelect.value;
-
-      tableRows.forEach(row => {
-        const statusCell = row.querySelector('.http-badge');
-        if (!statusCell) return;
-
-        const statusText = statusCell.textContent.trim();
-        let show = false;
-
-        if (filter === 'all') {
-          show = true;
-        } else if (filter === '2xx' && statusText.startsWith('2')) {
-          show = true;
-        } else if (filter === '3xx' && statusText.startsWith('3')) {
-          show = true;
-        } else if (filter === '4xx' && statusText.startsWith('4')) {
-          show = true;
-        } else if (filter === '5xx' && statusText.startsWith('5')) {
-          show = true;
-        }
-
-        row.style.display = show ? '' : 'none';
-      });
-    });
-</script>
 {% endblock %}
