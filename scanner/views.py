@@ -42,8 +42,14 @@ def dashboard(request):
     page_number = request.GET.get("page")
     scans = paginator.get_page(page_number)
 
+    # Pad scans to always show exactly 10 rows
+    scans_list_padded = list(scans.object_list)
+    while len(scans_list_padded) < 10:
+        scans_list_padded.append(None)
+
     context = {
         "scans": scans,
+        "scans_padded": scans_list_padded,
         "page_title": "Dashboard",
     }
     return render(request, "dashboard.html", context)
