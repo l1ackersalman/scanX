@@ -55,8 +55,7 @@
               </tr>
             </thead>
             <tbody>
-              {% for scan in scans_padded %}
-              {% if scan %}
+              {% for scan in scans %}
               <tr style="border-bottom: 1px solid var(--sx-border); transition: background var(--sx-transition);" onmouseover="this.style.background='var(--sx-surface-hover)'" onmouseout="this.style.background='transparent'">
                 <td style="padding: var(--sx-space-3) var(--sx-space-4); font-family: var(--sx-font-mono); font-size: var(--sx-text-sm); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                   <a href="{% url 'scanner:scan_detail' scan.id %}" style="color: var(--sx-text-primary);">{{ scan.domain }}</a>
@@ -79,16 +78,6 @@
                   <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">View</a>
                 </td>
               </tr>
-              {% else %}
-              <tr style="border-bottom: 1px solid var(--sx-border);">
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: right; color: var(--sx-text-secondary);">—</td>
-              </tr>
-              {% endif %}
               {% endfor %}
             </tbody>
           </table>
@@ -113,31 +102,10 @@
         </div>
         {% endif %}
       {% else %}
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: var(--sx-text-sm);">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--sx-border); text-align: left;">
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Domain</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Status</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Started</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Duration</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Results</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4);"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for i in "1234567890"|make_list %}
-              <tr style="border-bottom: 1px solid var(--sx-border);">
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">—</td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: right; color: var(--sx-text-secondary);">—</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <div class="empty-state" style="padding: var(--sx-space-8);">
+          <div class="icon">🔍</div>
+          <h2>No scans yet</h2>
+          <p>Start your first reconnaissance scan using the form on the left.</p>
         </div>
       {% endif %}
     </div>
