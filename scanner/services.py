@@ -120,7 +120,13 @@ class ScanExecutor:
                         "url": entry.get("url", ""),
                         "status": entry.get("status-code", entry.get("status_code", "N/A")),
                         "title": entry.get("title", ""),
-                        "tech": ", ".join(entry.get("tech-detect", [])) if entry.get("tech-detect") else "",
+                        "tech": ", ".join(
+                            entry.get("tech-detect")
+                            or entry.get("tech")
+                            or entry.get("technologies")
+                            or entry.get("tech_detect")
+                            or []
+                        ),
                         "server": entry.get("server", ""),
                         "ip": entry.get("ip", ""),
                         "cname": entry.get("cname", ""),
