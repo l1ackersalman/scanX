@@ -116,7 +116,7 @@ class ScanExecutor:
                     continue
                 try:
                     entry = json.loads(line)
-                    tech_raw = entry.get("tech-detect") or entry.get("tech") or entry.get("technologies") or entry.get("tech_detect") or entry.get("technology")
+                    tech_raw = entry.get("tech-detect") or entry.get("tech") or entry.get("technologies") or entry.get("tech_detect") or entry.get("technology") or entry.get("webserver") or entry.get("server") or entry.get("http-server")
                     tech_list = []
                     if isinstance(tech_raw, list):
                         tech_list = [str(t).strip() for t in tech_raw if str(t).strip()]
