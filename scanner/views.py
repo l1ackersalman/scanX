@@ -1,7 +1,7 @@
 """
 scanX Scanner Views
 
-Dashboard, scan initiation, live logs, scan history, and downloads.
+Dashboard, scan initiation, live logs, and scan history.
 """
 import json
 import logging
@@ -11,8 +11,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import (
-    FileResponse,
-    Http404,
     HttpResponse,
     HttpResponseBadRequest,
     JsonResponse,
@@ -24,7 +22,6 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Scan
 from .services import (
     get_log_lines,
-    get_scan_artifacts,
     run_scan_in_background,
 )
 from core.validators import validate_domain
@@ -41,7 +38,7 @@ def dashboard(request):
 
     # GET: show dashboard with scan history
     scans_list = Scan.objects.all()
-    paginator = Paginator(scans_list, 20)
+    paginator = Paginator(scans_list, 10)
     page_number = request.GET.get("page")
     scans = paginator.get_page(page_number)
 
@@ -94,11 +91,9 @@ def scan_detail(request, scan_id):
     Scan detail page: live logs, status, download links.
     """
     scan = get_object_or_404(Scan, id=scan_id)
-    artifacts = get_scan_artifacts(scan)
 
     context = {
         "scan": scan,
-        "artifacts": artifacts,
         "httpx_results": [
             {**r, "status_class": "status-success" if str(r.get("status", "")).startswith(("2", "3")) else "status-danger"}
             for r in (scan.httpx_results or [])
@@ -131,28 +126,6 @@ def scan_logs(request, scan_id):
             "is_terminal": status in ("completed", "failed"),
         }
     )
-
-
-def download_artifact(request, scan_id, artifact_name):
-    """
-    Download a scan artifact file.
-    """
-    scan = get_object_or_404(Scan, id=scan_id)
-    artifacts = get_scan_artifacts(scan)
-
-    if artifact_name not in artifacts:
-        raise Http404("Artifact not found")
-
-    file_path = artifacts[artifact_name]
-    if not file_path.exists():
-        raise Http404("File not found")
-
-    response = FileResponse(
-        open(file_path, "rb"),
-        as_attachment=True,
-        filename=f"{scan.domain}_{artifact_name}",
-    )
-    return response
 
 
 def scan_history(request):
