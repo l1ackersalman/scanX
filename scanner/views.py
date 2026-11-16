@@ -49,6 +49,20 @@ def get_status_class(status):
     return "http-status-unknown"
 
 
+def _normalize_tech(tech):
+    """Normalize tech field to a list of individual technology strings."""
+    if tech is None:
+        return []
+    if isinstance(tech, list):
+        return [t.strip() for t in tech if t and str(t).strip()]
+    if isinstance(tech, str):
+        tech = tech.strip()
+        if not tech:
+            return []
+        return [t.strip() for t in tech.split(",") if t.strip()]
+    return []
+
+
 def dashboard(request):
     """
     Main dashboard: scan form + scan history.
@@ -117,9 +131,7 @@ def scan_detail(request, scan_id):
         "httpx_results": [
             {**r,
              "status_class": get_status_class(r.get("status", "")),
-             "tech": r.get("tech", []) if isinstance(r.get("tech"), list)
-                     else [r.get("tech")] if r.get("tech")
-                     else []
+             "tech": _normalize_tech(r.get("tech"))
             }
             for r in (scan.httpx_results or [])
         ],
