@@ -59,8 +59,6 @@ def start_scan(request):
     Validates input, creates Scan record, launches background worker.
     """
     domain = request.POST.get("domain", "").strip()
-    authorized = request.POST.get("authorized") == "on"
-    authorized_by = request.POST.get("authorized_by", "").strip()
 
     # Validation
     errors = []
@@ -72,22 +70,16 @@ def start_scan(request):
         except Exception as e:
             errors.append(str(e))
 
-    if not authorized:
-        errors.append("You must confirm authorization to scan this domain.")
-
-    if not authorized_by:
-        errors.append("Authorized by (name/email) is required.")
-
     if errors:
         for error in errors:
             messages.error(request, error)
         return redirect("scanner:dashboard")
 
-    # Create scan record
+    # Create scan record (authorization fields removed from UI)
     scan = Scan.objects.create(
         domain=domain.lower(),
-        authorized=authorized,
-        authorized_by=authorized_by,
+        authorized=False,
+        authorized_by="",
     )
 
     # Launch background scan

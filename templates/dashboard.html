@@ -13,7 +13,7 @@
   <!-- Scan Form Card -->
   <section class="card scan-form" aria-labelledby="scan-form-title">
     <div class="card-head">
-      <h2 id="scan-form-title" class="card-title" style="margin: 0;">New Scan</h2>
+      <h2 id="scan-form-title" class="card-title" style="margin: 0; color: var(--sx-accent);">New Scan</h2>
     </div>
     <form method="post" action="{% url 'scanner:start_scan' %}" novalidate>
       {% csrf_token %}
@@ -21,28 +21,14 @@
         <div class="form-group">
           <label for="id_domain" class="form-label">Target Domain</label>
           <input type="text" id="id_domain" name="domain" class="form-input"
-                 placeholder="example.com" required autocomplete="off"
+                 required autocomplete="off"
                  pattern="^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
-                 title="Enter a valid domain name (e.g., example.com)">
-          <small class="form-text">Enter the authorized target domain for reconnaissance.</small>
-        </div>
-
-        <div class="form-group">
-          <label class="form-checkbox">
-            <input type="checkbox" id="id_authorized" name="authorized" required>
-            <span>I confirm I am authorized to scan this target</span>
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label for="id_authorized_by" class="form-label">Authorized By</label>
-          <input type="text" id="id_authorized_by" name="authorized_by" class="form-input"
-                 placeholder="Your name / email / ticket #" required>
-          <small class="form-text">Your identifier for audit trail.</small>
+                 title="Enter a valid domain name">
+          <small class="form-text">Enter the target domain for reconnaissance.</small>
         </div>
       </div>
       <div class="card-footer" style="justify-content: flex-end;">
-        <button type="submit" class="btn-primary" disabled>
+        <button type="submit" class="btn-primary">
           Start Scan
         </button>
       </div>

@@ -257,7 +257,7 @@ main.content {
 .form-group { display: flex; flex-direction: column; gap: var(--sx-space-1); margin-bottom: var(--sx-space-4); }
 .form-label { font-size: var(--sx-text-sm); font-weight: 500; color: var(--sx-text-primary); }
 .form-input {
-  width: 100%; background: var(--sx-surface); border: 1px solid var(--sx-border);
+  width: 100%; background: #2a2d33; border: 1px solid var(--sx-border);
   color: var(--sx-text-primary); padding: var(--sx-space-2) var(--sx-space-3);
   border-radius: var(--sx-radius-control); font-size: var(--sx-text-sm);
   outline: none; transition: border var(--sx-transition), box-shadow var(--sx-transition);

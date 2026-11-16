@@ -10,6 +10,18 @@
   @media (min-width: 900px) {
     .detail-grid { display: grid; grid-template-columns: 1fr 420px; gap: var(--sx-space-5); }
   }
+  /* When scan is completed/failed, expand sidebar to full width */
+  .detail-grid.completed-view { grid-template-columns: 1fr; gap: var(--sx-space-5); }
+  .detail-grid.completed-view aside { max-width: none; width: 100%; }
+  /* Wider stats grid on full width */
+  .detail-grid.completed-view .stats-grid { grid-template-columns: repeat(4, 1fr); gap: var(--sx-space-3); }
+  /* Full-width download buttons */
+  .detail-grid.completed-view .download-list { flex-direction: column; gap: var(--sx-space-2); }
+  .detail-grid.completed-view .download-btn { width: 100%; justify-content: flex-start; }
+  /* Full-width action buttons */
+  .detail-grid.completed-view .card-body > div { flex-direction: column; gap: var(--sx-space-2); }
+  .detail-grid.completed-view .card-body > div > a,
+  .detail-grid.completed-view .card-body > div > button { width: 100%; text-align: left; }
 </style>
 {% endblock %}
 
@@ -33,8 +45,9 @@
   <span class="badge badge-neutral">Created {{ scan.created_at|naturaltime }}</span>
 </div>
 
-<div class="detail-grid">
-  <!-- Main Column: Logs + Stats -->
+<div class="detail-grid {% if scan.status == "completed" or scan.status == "failed" %}completed-view{% endif %}">
+  <!-- Main Column: Logs (shown only while scan is running) -->
+  {% if scan.status == "pending" or scan.status == "running" %}
   <section aria-labelledby="live-logs-title">
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sx-space-3);">
       <h2 id="live-logs-title" class="section-title" style="margin: 0;">Live Logs</h2>
@@ -57,8 +70,10 @@
     </div>
     {% endif %}
   </section>
+  {% endif %}
 
-  <!-- Sidebar: Stats + Downloads -->
+  <!-- Sidebar: Stats + Downloads (shown only after scan completes) -->
+  {% if scan.status == "completed" or scan.status == "failed" %}
   <aside>
     <!-- Statistics -->
     <section class="card" aria-labelledby="stats-title">
@@ -140,6 +155,7 @@
       </div>
     </section>
   </aside>
+  {% endif %}
 </div>
 {% endblock %}
 
