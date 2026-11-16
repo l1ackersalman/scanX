@@ -124,13 +124,15 @@ class ScanExecutor:
                         tech_list = [f"{k}:{v}" if v else k for k, v in tech_raw.items() if k]
                     elif isinstance(tech_raw, str) and tech_raw.strip():
                         tech_list = [t.strip() for t in tech_raw.split(",") if t.strip()]
+                    # Get IP from host_ip or first element of 'a' array
+                    ip_val = entry.get("host_ip") or (entry.get("a", [""])[0] if entry.get("a") else "")
                     results.append({
                         "url": entry.get("url", ""),
                         "status": entry.get("status-code", entry.get("status_code", "N/A")),
                         "title": entry.get("title", ""),
                         "tech": tech_list,
                         "server": entry.get("server", ""),
-                        "ip": entry.get("ip", ""),
+                        "ip": ip_val,
                         "cname": entry.get("cname", ""),
                     })
                 except json.JSONDecodeError:
