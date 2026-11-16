@@ -66,51 +66,6 @@
   </section>
   {% endif %}
 
-  <!-- Main Column: HTTP Results (shown only after scan completes) -->
-  {% if scan.status == "completed" or scan.status == "failed" %}
-  <section aria-labelledby="httpx-results-title">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sx-space-3);">
-      <h2 id="httpx-results-title" class="section-title" style="margin: 0;">HTTP Results</h2>
-    </div>
-
-    {% if httpx_results %}
-    <div style="overflow-x: auto; max-height: 500px;">
-      <table style="width: 100%; border-collapse: collapse; font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">
-        <thead>
-          <tr style="border-bottom: 2px solid var(--sx-border); text-align: left;">
-            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 30%;">URL</th>
-            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 12%;">Status</th>
-            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 20%;">Title</th>
-            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 18%;">Technology</th>
-            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 10%;">Server</th>
-            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 12%;">IP</th>
-            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 18%;">CNAME</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for result in httpx_results %}
-          <tr style="border-bottom: 1px solid var(--sx-border);">
-            <td style="padding: var(--sx-space-2) var(--sx-space-4); color: var(--sx-text-primary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ result.url }}</td>
-            <td style="padding: var(--sx-space-2) var(--sx-space-4); font-weight: 600; color: {% if result.status_class == 'status-success' %}var(--sx-success);{% else %}var(--sx-danger);{% endif %};">{{ result.status }}</td>
-            <td style="padding: var(--sx-space-2) var(--sx-space-4); color: var(--sx-text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis;">{{ result.title }}</td>
-            <td style="padding: var(--sx-space-2) var(--sx-space-4); color: var(--sx-text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis;">{{ result.tech }}</td>
-            <td style="padding: var(--sx-space-2) var(--sx-space-4); color: var(--sx-text-secondary);">{{ result.server }}</td>
-            <td style="padding: var(--sx-space-2) var(--sx-space-4); color: var(--sx-text-primary);">{{ result.ip }}</td>
-            <td style="padding: var(--sx-space-2) var(--sx-space-4); color: var(--sx-text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis;">{{ result.cname }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="empty-state" style="padding: var(--sx-space-5);">
-      <div class="icon">🌐</div>
-      <p>No HTTP results available.</p>
-    </div>
-    {% endif %}
-  </section>
-  {% endif %}
-
   <!-- Sidebar: Stats + Downloads (shown only after scan completes) -->
   {% if scan.status == "completed" or scan.status == "failed" %}
   <aside>
@@ -154,6 +109,47 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <!-- HTTP Results (shown after Statistics) -->
+    <section aria-labelledby="httpx-results-title">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sx-space-3);">
+        <h2 id="httpx-results-title" class="card-title" style="margin: 0;">HTTP Results</h2>
+      </div>
+
+      {% if httpx_results %}
+      <div style="overflow-x: auto; max-height: 400px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--sx-border); text-align: left;">
+              <th style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 30%;">URL</th>
+              <th style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 10%;">Status</th>
+              <th style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 20%;">Title</th>
+              <th style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 18%;">Technology</th>
+              <th style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 10%;">Server</th>
+              <th style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 12%;">IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for result in httpx_results %}
+            <tr style="border-bottom: 1px solid var(--sx-border);">
+              <td style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-primary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ result.url }}</td>
+              <td style="padding: var(--sx-space-2) var(--sx-space-3); font-weight: 600; color: {% if result.status_class == 'status-success' %}var(--sx-success);{% else %}var(--sx-danger);{% endif %};">{{ result.status }}</td>
+              <td style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-secondary); max-width: 100px; overflow: hidden; text-overflow: ellipsis;">{{ result.title }}</td>
+              <td style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-secondary); max-width: 100px; overflow: hidden; text-overflow: ellipsis;">{{ result.tech }}</td>
+              <td style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-secondary);">{{ result.server }}</td>
+              <td style="padding: var(--sx-space-2) var(--sx-space-3); color: var(--sx-text-primary);">{{ result.ip }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding: var(--sx-space-3);">
+        <div class="icon">🌐</div>
+        <p>No HTTP results available.</p>
+      </div>
+      {% endif %}
     </section>
 
     <!-- Downloads -->
