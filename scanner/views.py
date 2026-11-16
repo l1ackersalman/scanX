@@ -115,7 +115,12 @@ def scan_detail(request, scan_id):
     context = {
         "scan": scan,
         "httpx_results": [
-            {**r, "status_class": get_status_class(r.get("status", ""))}
+            {**r,
+             "status_class": get_status_class(r.get("status", "")),
+             "tech": r.get("tech", []) if isinstance(r.get("tech"), list)
+                     else [r.get("tech")] if r.get("tech")
+                     else []
+            }
             for r in (scan.httpx_results or [])
         ],
         "page_title": f"Scan: {scan.domain}",
