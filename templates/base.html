@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>{% block title %}scanX{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/scanx.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <a href="#main-content" class="sr-only-skip">Skip to main content</a>
+
+  <div class="app">
+    <!-- Header / App Bar -->
+    <header class="app-bar">
+      <div class="bar-inner">
+        <div class="brand">
+          <span class="brand-mark">S</span>
+          <span>scanX <mark>Recon</mark></span>
+        </div>
+        <nav class="nav" aria-label="Main navigation">
+          <a href="{% url 'scanner:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+          <a href="{% url 'scanner:history' %}" {% if request.resolver_match.url_name == 'history' %}aria-current="page"{% endif %}>History</a>
+          <span class="nav-placeholder">Targets</span>
+          <span class="nav-placeholder">Assets</span>
+          <span class="nav-placeholder">Reports</span>
+          <span class="nav-placeholder">Settings</span>
+        </nav>
+        <div class="actions">
+          <button class="btn-icon" title="Theme" aria-label="Toggle theme" id="themeToggle">🌓</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="content" id="main-content" role="main">
+      {% if messages %}
+        <div class="messages" role="alert" aria-live="polite">
+          {% for message in messages %}
+            <div class="message message-{{ message.tags }}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script src="{% static 'js/scanx.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

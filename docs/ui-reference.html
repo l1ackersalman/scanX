@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scanX · Catalog Reference</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* scanX design tokens — dark-first, NVIDIA-catalog inspired layout.
+       Values are scanX's own; no NVIDIA branding, logos, or proprietary code. */
+    :root {
+      --sx-background: #101113;
+      --sx-surface: #181a1d;
+      --sx-surface-hover: #202327;
+      --sx-border: #2b2e33;
+      --sx-text-primary: #f4f5f6;
+      --sx-text-secondary: #9ba1a9;
+      --sx-accent: #76b900;
+      --sx-accent-hover: #8fcc00;
+      --sx-success: #35b779;
+      --sx-warning: #e6a23c;
+      --sx-danger: #e35d6a;
+      --sx-radius-card: 12px;
+      --sx-radius-control: 8px;
+      --sx-radius-pill: 9999px;
+      --sx-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+      --sx-transition: 150ms ease;
+      --sx-sidebar-width: 280px;
+      --sx-header-height: 64px;
+    }
+
+    [data-theme="light"] {
+      --sx-background: #fafafa;
+      --sx-surface: #ffffff;
+      --sx-surface-hover: #f3f4f6;
+      --sx-border: #e5e7eb;
+      --sx-text-primary: #111827;
+      --sx-text-secondary: #6b7280;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--sx-background);
+      color: var(--sx-text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; }
+
+    /* Visually hidden skip link */
+    .sr-only-skip {
+      position: absolute;
+      left: -9999px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      z-index: 100;
+    }
+    .sr-only-skip:focus {
+      position: static;
+      width: auto;
+      height: auto;
+      padding: 0.5rem 1rem;
+      background: var(--sx-accent);
+      color: var(--sx-background);
+      border-radius: var(--sx-radius-control);
+      font-weight: 600;
+      z-index: 100;
+    }
+
+    /* Layout shell */
+    .app {
+      display: grid;
+      grid-template-rows: var(--sx-header-height) 1fr;
+      grid-template-columns: 1fr;
+      min-height: 100vh;
+    }
+    @media (min-width: 1024px) {
+      .app {
+        grid-template-rows: var(--sx-header-height) 1fr;
+        grid-template-columns: var(--sx-sidebar-width) 1fr;
+      }
+      .app > header { grid-column: 1 / -1; }
+      .app > aside { grid-row: 2; grid-column: 1; }
+      .app > main { grid-row: 2; grid-column: 2; }
+    }
+
+    /* Header / app bar */
+    header.app-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid var(--sx-border);
+      background: rgba(16, 17, 19, 0.6);
+      backdrop-filter: blur(8px);
+    }
+    header.app-bar .bar-inner {
+      max-width: 100%;
+      height: var(--sx-header-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+    }
+    header.app-bar .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.025em;
+    }
+    header.app-bar .brand mark {
+      background: var(--sx-accent);
+      color: var(--sx-background);
+      padding: 0 0.25rem;
+      border-radius: 4px;
+      font-style: normal;
+    }
+    header.app-bar .nav {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+    header.app-bar .nav a {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--sx-text-secondary);
+      transition: color var(--sx-transition);
+    }
+    header.app-bar .nav a:hover,
+    header.app-bar .nav a[aria-current="page"] {
+      color: var(--sx-text-primary);
+    }
+    header.app-bar .actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--sx-text-secondary);
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: var(--sx-radius-control);
+      font-size: 1rem;
+      transition: background var(--sx-transition), color var(--sx-transition);
+    }
+    .btn-icon:hover {
+      background: var(--sx-surface-hover);
+      color: var(--sx-text-primary);
+    }
+    .btn-ghost {
+      background: var(--sx-surface);
+      border: 1px solid var(--sx-border);
+      color: var(--sx-text-primary);
+      padding: 0.5rem 1rem;
+      border-radius: var(--sx-radius-control);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--sx-transition);
+    }
+    .btn-ghost:hover {
+      border-color: var(--sx-text-secondary);
+    }
+    .btn-primary {
+      background: var(--sx-accent);
+      color: var(--sx-background);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: var(--sx-radius-control);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--sx-transition);
+    }
+    .btn-primary:hover { background: var(--sx-accent-hover); }
+
+    /* Global search */
+    .global-search {
+      position: sticky;
+      top: var(--sx-header-height);
+      z-index: 40;
+      border-bottom: 1px solid var(--sx-border);
+      background: var(--sx-background);
+    }
+    .global-search .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0.75rem 1rem;
+      position: relative;
+    }
+    .global-search input {
+      width: 100%;
+      background: var(--sx-surface);
+      border: 1px solid var(--sx-border);
+      color: var(--sx-text-primary);
+      padding: 0.625rem 1rem 0.625rem 2.75rem;
+      border-radius: var(--sx-radius-control);
+      font-size: 0.875rem;
+      outline: none;
+      transition: border var(--sx-transition), box-shadow var(--sx-transition);
+    }
+    .global-search input:focus {
+      border-color: var(--sx-accent);
+      box-shadow: 0 0 0 3px rgba(118, 185, 0, 0.15);
+    }
+    .global-search .search-icon {
+      position: absolute;
+      left: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--sx-text-secondary);
+    }
+
+    /* Aside / filter sidebar */
+    aside.sidebar {
+      border-right: 1px solid var(--sx-border);
+      background: var(--sx-surface);
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    @media (max-width: 1023px) {
+      aside.sidebar { display: none; }
+    }
+    .sidebar-section { display: flex; flex-direction: column; gap: 0.75rem; }
+    .sidebar-section h3 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--sx-text-secondary);
+      margin: 0;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--sx-border);
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding: 0.4rem 0.6rem;
+      border-radius: var(--sx-radius-control);
+      transition: background var(--sx-transition);
+      user-select: none;
+    }
+    .filter-item input { appearance: none; width: 16px; height: 16px; border: 1px solid var(--sx-border); border-radius: 4px; background: var(--sx-background); cursor: pointer; position: relative; }
+    .filter-item input:checked {
+      background: var(--sx-accent);
+      border-color: var(--sx-accent);
+    }
+    .filter-item input:checked::after {
+      content: '✔';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--sx-background);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .filter-item:hover { background: var(--sx-surface-hover); }
+    .filter-item span:last-child { color: var(--sx-text-secondary); font-size: 0.875rem; font-weight: 500; }
+    .filter-item .badge {
+      margin-left: auto;
+      background: var(--sx-border);
+      color: var(--sx-text-secondary);
+      font-size: 0.75rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--sx-radius-pill);
+    }
+    .accordion-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      color: var(--sx-text-primary);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+    }
+    .accordion-trigger:hover { color: var(--sx-accent); }
+    .accordion-content { display: flex; flex-direction: column; gap: 0.25rem; padding-top: 0.5rem; border-top: 1px solid var(--sx-border); margin-top: 0.5rem; }
+    .show-more {
+      background: none;
+      border: none;
+      color: var(--sx-accent);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 0.25rem;
+      text-align: left;
+    }
+    .show-more:hover { text-decoration: underline; }
+    .filter-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--sx-border);
+    }
+    .btn-reset, .btn-apply {
+      padding: 0.5rem 1rem;
+      border-radius: var(--sx-radius-control);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--sx-transition);
+      border: 1px solid transparent;
+    }
+    .btn-reset {
+      background: transparent;
+      color: var(--sx-text-secondary);
+      border-color: var(--sx-border);
+    }
+    .btn-reset:hover { color: var(--sx-text-primary); border-color: var(--sx-text-secondary); }
+    .btn-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-apply {
+      background: var(--sx-surface);
+      color: var(--sx-text-primary);
+      border-color: var(--sx-border);
+    }
+    .btn-apply:hover { border-color: var(--sx-text-secondary); }
+    .btn-apply:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Main content */
+    main.content {
+      padding: 1.5rem;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    @media (min-width: 1024px) { main.content { padding: 2rem; } }
+
+    .page-banner { margin-bottom: 1.5rem; }
+    .page-banner h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 0.25rem 0;
+      letter-spacing: -0.01em;
+    }
+    .page-banner p {
+      color: var(--sx-text-secondary);
+      font-size: 0.875rem;
+      margin: 0;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--sx-border);
+      margin-bottom: 1.5rem;
+    }
+    .tabs button {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--sx-text-secondary);
+      cursor: pointer;
+      transition: all var(--sx-transition);
+    }
+    .tabs button:hover { color: var(--sx-text-primary); }
+    .tabs button[aria-selected="true"] {
+      color: var(--sx-text-primary);
+      border-bottom-color: var(--sx-accent);
+    }
+
+    /* Toolbar: count + search + sort */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .count { font-size: 0.875rem; font-weight: 600; color: var(--sx-text-secondary); }
+    .count .number { color: var(--sx-text-primary); margin-left: 0.25rem; }
+    .toolbar-search { position: relative; width: 320px; }
+    .toolbar-search input {
+      width: 100%;
+      background: var(--sx-surface);
+      border: 1px solid var(--sx-border);
+      color: var(--sx-text-primary);
+      padding: 0.55rem 1rem 0.55rem 2.5rem;
+      border-radius: var(--sx-radius-control);
+      font-size: 0.875rem;
+      outline: none;
+    }
+    .toolbar-search input:focus { border-color: var(--sx-accent); }
+    .toolbar-search .search-icon {
+      position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%);
+      color: var(--sx-text-secondary);
+    }
+    .sort-control {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      background: var(--sx-surface);
+      border: 1px solid var(--sx-border);
+      color: var(--sx-text-primary);
+      padding: 0.05rem 0.75rem;
+      border-radius: var(--sx-radius-control);
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .sort-control select {
+      background: transparent;
+      border: none;
+      color: inherit;
+      font: inherit;
+      outline: none;
+      appearance: none;
+      padding: 0.25rem 0;
+      cursor: pointer;
+    }
+
+    /* Catalog grid */
+    .catalog {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    @media (min-width: 768px) { .catalog { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1200px) { .catalog { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1536px) { .catalog { grid-template-columns: repeat(4, 1fr); } }
+
+    .card {
+      background: var(--sx-surface);
+      border: 1px solid var(--sx-border);
+      border-radius: var(--sx-radius-card);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border var(--sx-transition), box-shadow var(--sx-transition);
+      cursor: pointer;
+    }
+    .card:hover {
+      border-color: var(--sx-text-secondary);
+      box-shadow: var(--sx-shadow);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      border-bottom: 1px solid var(--sx-border);
+    }
+    .card-avatar {
+      width: 32px; height: 32px;
+      border-radius: var(--sx-radius-control);
+      background: var(--sx-background);
+      object-fit: cover;
+      border: 1px solid var(--sx-border);
+      flex-shrink: 0;
+    }
+    .card-meta { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; }
+    .card-publisher {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--sx-accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-badges {
+      display: flex;
+      gap: 0.375rem;
+      margin-left: auto;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+      padding: 0.125rem 0.5rem;
+      border-radius: var(--sx-radius-pill);
+      border: 1px solid transparent;
+    }
+    .badge-downloadable {
+      background: rgba(53, 183, 121, 0.1);
+      color: var(--sx-success);
+      border-color: rgba(53, 183, 121, 0.3);
+    }
+    .badge-free {
+      background: rgba(118, 185, 0, 0.1);
+      color: var(--sx-accent);
+      border-color: rgba(118, 185, 0, 0.3);
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 1rem 0.5rem 1rem;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-body { padding: 0 1rem 1rem 1rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+    .card-desc {
+      font-size: 0.8125rem;
+      color: var(--sx-text-secondary);
+      line-height: 1.4;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+    }
+    .tag {
+      font-size: 0.7rem;
+      color: var(--sx-text-secondary);
+      border: 1px solid var(--sx-border);
+      padding: 0.1875rem 0.5rem;
+      border-radius: var(--sx-radius-pill);
+      background: transparent;
+    }
+    .tag:hover { border-color: var(--sx-accent); color: var(--sx-accent); }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--sx-border);
+      background: var(--sx-surface-hover);
+    }
+    .card-stats { font-size: 0.75rem; color: var(--sx-text-secondary); font-variant-numeric: tabular-nums; }
+    .card-more {
+      background: none;
+      border: none;
+      color: var(--sx-accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.125rem;
+    }
+    .card-more:hover { text-decoration: underline; }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 1rem;
+      text-align: center;
+      color: var(--sx-text-secondary);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    .empty-state h2 { font-size: 1.25rem; font-weight: 600; margin: 0 0 0.5rem 0; color: var(--sx-text-primary); }
+    .empty-state p { margin: 0; font-size: 0.875rem; }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--sx-border);
+      flex-wrap: wrap;
+    }
+    .pagination .info { font-size: 0.875rem; color: var(--sx-text-secondary); }
+    .pagination .controls { display: flex; gap: 0.375rem; }
+    .pagination button {
+      background: var(--sx-surface);
+      border: 1px solid var(--sx-border);
+      color: var(--sx-text-primary);
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--sx-radius-control);
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .pagination button:hover { border-color: var(--sx-accent); }
+    .pagination button[aria-current="page"] {
+      background: var(--sx-accent);
+      color: var(--sx-background);
+      border-color: var(--sx-accent);
+    }
+
+    /* Mobile sidebar toggle */
+    .sidebar-toggle {
+      display: none;
+      align-items: center;
+      gap: 0.375rem;
+      background: var(--sx-surface);
+      border: 1px solid var(--sx-border);
+      color: var(--sx-text-primary);
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--sx-radius-control);
+      font-size: 0.875rem;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 1023px) { .sidebar-toggle { display: inline-flex; } }
+    .sidebar.open { display: block; position: fixed; top: var(--sx-header-height); left: 0; bottom: 0; width: var(--sx-sidebar-width); z-index: 60; overflow-y: auto; box-shadow: var(--sx-shadow); }
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 55;
+    }
+    .overlay.open { display: block; }
+
+    .theme-toggle {
+      background: var(--sx-surface);
+      border: 1px solid var(--sx-border);
+      color: var(--sx-text-primary);
+      width: 32px; height: 32px;
+      border-radius: var(--sx-radius-control);
+      cursor: pointer;
+      display: flex;
+      align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <!-- Skip link -->
+    <a href="#main-content" class="sr-only-skip">Skip to main content</a>
+
+    <!-- Header -->
+    <header class="app-bar">
+      <div class="bar-inner">
+        <div class="brand flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-[var(--sx-accent)] flex items-center justify-center text-[var(--sx-background)] font-bold text-xs">S</span>
+          <span>scanX <mark>Recon</mark></span>
+        </div>
+        <nav class="nav hidden md:flex">
+          <a href="#" aria-current="page">Dashboard</a>
+          <a href="#">Targets</a>
+          <a href="#">Reconnaissance</a>
+          <a href="#">Assets</a>
+          <a href="#">Screenshots</a>
+          <a href="#">Reports</a>
+          <a href="#">Tool Manager</a>
+          <a href="#">AI Agents</a>
+          <a href="#">Investigations</a>
+          <a href="#">Settings</a>
+        </nav>
+        <div class="actions flex items-center gap-3">
+          <button class="btn-icon" title="Search (Ctrl+K)">🔍</button>
+          <button class="btn-icon" title="Help">?</button>
+          <button class="theme-toggle" title="Toggle theme" aria-label="Toggle theme" id="themeToggle">🌓</button>
+          <button class="btn-ghost">Login</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Global search -->
+    <div class="global-search">
+      <div class="wrap">
+        <span class="search-icon">🔍</span>
+        <input type="search" placeholder="Search scanX" aria-label="Global search" />
+      </div>
+    </div>
+
+    <main class="content" id="main-content">
+      <!-- Mobile sidebar toggle -->
+      <button class="sidebar-toggle" id="sidebarToggle">
+        <span>☰</span> Filters
+      </button>
+      <div class="overlay" id="overlay"></div>
+
+      <!-- Page banner -->
+      <div class="page-banner">
+        <h1>Targets</h1>
+        <p>Authorized reconnaissance targets with scope configuration and scan history.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button role="tab" aria-selected="true" aria-controls="tab-all">All targets</button>
+        <button role="tab" aria-selected="false" aria-controls="tab-active">Active</button>
+        <button role="tab" aria-selected="false" aria-controls="tab-inactive">Inactive</button>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="count">Target<span class="number">4</span></div>
+          <div class="toolbar-search">
+            <span class="search-icon">🔍</span>
+            <input type="search" placeholder="Filter targets" aria-label="Filter targets" />
+          </div>
+        </div>
+        <div class="sort-control">
+          <span>Sort by</span>
+          <select aria-label="Sort targets">
+            <option>Last scanned</option>
+            <option>Name</option>
+            <option>Created</option>
+            <option>Asset count</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Catalog grid -->
+      <div class="catalog" role="list" aria-label="Target catalog">
+        <!-- Card 1 -->
+        <article class="card" role="listitem">
+          <div class="card-head">
+            <img class="card-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23181a1d'/%3E%3Ctext x='16' y='20' font-family='sans-serif' font-size='14' fill='%2376b900' text-anchor='middle' font-weight='bold'%3EX%3C/text%3E%3C/svg%3E" alt="" />
+            <div class="card-meta">
+              <div class="card-publisher">example.com</div>
+              <div class="card-badges">
+                <span class="badge badge-free">Free</span>
+                <span class="badge badge-downloadable">In Scope</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">example.com</h3>
+            <p class="card-desc">Primary production domain for external-facing web applications. Authorized for full reconnaissance including subdomain discovery, DNS resolution, HTTP probing, and screenshot capture.</p>
+            <div class="card-tags">
+              <span class="tag">Web</span>
+              <span class="tag">Production</span>
+              <span class="tag">In Scope</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <span class="card-stats">12 subdomains · 4 live</span>
+            <button class="card-more">↗</button>
+          </div>
+        </article>
+        <!-- Card 2 -->
+        <article class="card" role="listitem">
+          <div class="card-head">
+            <img class="card-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23181a1d'/%3E%3Ctext x='16' y='20' font-family='sans-serif' font-size='14' fill='%2376b900' text-anchor='middle' font-weight='bold'%3ET%3C/text%3E%3C/svg%3E" alt="" />
+            <div class="card-meta">
+              <div class="card-publisher">testtarget.org</div>
+              <div class="card-badges">
+                <span class="badge badge-free">In Scope</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">testtarget.org</h3>
+            <p class="card-desc">Staging environment used for scheduled weekly reconnaissance. Limited to passive discovery only; active probing requires separate authorization.</p>
+            <div class="card-tags">
+              <span class="tag">Staging</span>
+              <span class="tag">Passive</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <span class="card-stats">3 subdomains · 1 live</span>
+            <button class="card-more">↗</button>
+          </div>
+        </article>
+        <!-- Card 3 -->
+        <article class="card" role="listitem">
+          <div class="card-head">
+            <img class="card-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23181a1d'/%3E%3Ctext x='16' y='20' font-family='sans-serif' font-size='14' fill='%2376b900' text-anchor='middle' font-weight='bold'%3EB%3C/text%3E%3C/svg%3E" alt="" />
+            <div class="card-meta">
+              <div class="card-publisher">bugbounty.example</div>
+              <div class="card-badges">
+                <span class="badge badge-free">Out of Scope</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">bugbounty.example</h3>
+            <p class="card-desc">Third-party bug bounty program domain. Discovery results recorded but excluded from active scanning per program policy.</p>
+            <div class="card-tags">
+              <span class="tag">Third Party</span>
+              <span class="tag">Out of Scope</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <span class="card-stats">8 subdomains · 0 live</span>
+            <button class="card-more">↗</button>
+          </div>
+        </article>
+        <!-- Card 4 -->
+        <article class="card" role="listitem">
+          <div class="card-head">
+            <img class="card-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23181a1d'/%3E%3Ctext x='16' y='20' font-family='sans-serif' font-size='14' fill='%2376b900' text-anchor='middle' font-weight='bold'%3EA%3C/text%3E%3C/svg%3E" alt="" />
+            <div class="card-meta">
+              <div class="card-publisher">api.internal</div>
+              <div class="card-badges">
+                <span class="badge badge-downloadable">Internal</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">api.internal</div>
+            <p class="card-desc">Internal API host requiring VPN access. Not reachable from the public scanner; results imported manually from authorized internal recon.</p>
+            <div class="card-tags">
+              <span class="tag">Internal</span>
+              <span class="tag">API</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <span class="card-stats">0 subdomains · 0 live</span>
+            <button class="card-more">↗</button>
+          </div>
+        </article>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <div class="info">Showing 1–4 of 4 targets</div>
+        <div class="controls">
+          <button aria-label="Previous page" disabled>‹</button>
+          <button aria-current="page" aria-label="Page 1">1</button>
+          <button aria-label="Next page" disabled>›</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Aside: filter sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <h3>Status</h3>
+        <div class="filter-group">
+          <label class="filter-item">
+            <input type="checkbox" name="status_active" />
+            <span>Active</span>
+            <span class="badge">12</span>
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" name="status_inactive" />
+            <span>Inactive</span>
+            <span class="badge">3</span>
+          </label>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Scope</h3>
+        <div class="filter-group">
+          <label class="filter-item">
+            <input type="checkbox" name="scope_in" />
+            <span>In Scope</span>
+            <span class="badge">8</span>
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" name="scope_out" />
+            <span>Out of Scope</span>
+            <span class="badge">2</span>
+          </label>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <button class="accordion-trigger">Scan type <span>▾</span></button>
+        <div class="accordion-content">
+          <label class="filter-item">
+            <input type="checkbox" name="type_passive" />
+            <span>Passive</span>
+            <span class="badge">5</span>
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" name="type_active" />
+            <span>Active</span>
+            <span class="badge">4</span>
+          </label>
+          <button class="show-more">Show more</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <button class="accordion-trigger">Technology <span>▾</span></button>
+        <div class="accordion-content">
+          <label class="filter-item">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23181a1d' stroke='%2376b900'/%3E%3C/svg%3E" style="width:16px;height:16px;border-radius:4px;border:1px solid var(--sx-border);" alt="" />
+            <span>Nginx</span>
+            <span class="badge">3</span>
+          </label>
+          <label class="filter-item">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23181a1d' stroke='%23e6a23c'/%3E%3C/svg%3E" style="width:16px;height:16px;border-radius:4px;border:1px solid var(--sx-border);" alt="" />
+            <span>Apache</span>
+            <span class="badge">2</span>
+          </label>
+          <button class="show-more">Show more</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <button class="accordion-trigger">HTTP status <span>▾</span></button>
+        <div class="accordion-content">
+          <label class="filter-item">
+            <input type="checkbox" name="http_200" />
+            <span>200 OK</span>
+            <span class="badge">6</span>
+          </label>
+          <label class="filter-item">
+            <input type="checkbox" name="http_403" />
+            <span>403 Forbidden</span>
+            <span class="badge">2</span>
+          </label>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <button class="accordion-trigger">Tool source <span>▾</span></button>
+        <div class="accordion-content">
+          <label class="filter-item">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23181a1d' stroke='%2335b779'/%3E%3C/svg%3E" style="width:16px;height:16px;border-radius:4px;border:1px solid var(--sx-border);" alt="" />
+            <span>subfinder</span>
+            <span class="badge">9</span>
+          </label>
+          <label class="filter-item">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23e35d6a'/%3E%3C/svg%3E" style="width:16px;height:16px;border-radius:4px;border:1px solid var(--sx-border);" alt="" />
+            <span>assetfinder</span>
+            <span class="badge">4</span>
+          </label>
+          <button class="show-more">Show more</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <button class="accordion-trigger">Date <span>▾</span></button>
+        <div class="accordion-content">
+          <label class="filter-item"><input type="checkbox" name="date_7d" /><span>Last 7 days</span></label>
+          <label class="filter-item"><input type="checkbox" name="date_30d" /><span>Last 30 days</span></label>
+          <label class="filter-item"><input type="checkbox" name="date_90d" /><span>Last 90 days</span></label>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn-reset" id="btnReset">Reset</button>
+        <button class="btn-apply" id="btnApply" disabled>Apply</button>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // Theme toggle persistence
+    (function() {
+      const btn = document.getElementById('themeToggle');
+      const saved = localStorage.getItem('sx-theme');
+      if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      btn.addEventListener('click', () => {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        if (isLight) {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('sx-theme', 'dark');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+          localStorage.setItem('sx-theme', 'light');
+        }
+      });
+    })();
+
+    // Mobile sidebar toggle
+    (function() {
+      const toggle = document.getElementById('sidebarToggle');
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('overlay');
+      function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('open'); }
+      function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+      toggle.addEventListener('click', openSidebar);
+      overlay.addEventListener('click', closeSidebar);
+    })();
+
+    // Apply/reset button state
+    (function() {
+      const checkboxes = document.querySelectorAll('.filter-item input[type="checkbox"]');
+      const apply = document.getElementById('btnApply');
+      function update() {
+        const any = Array.from(checkboxes).some(c => c.checked);
+        apply.disabled = !any;
+      }
+      checkboxes.forEach(c => c.addEventListener('change', update));
+      document.getElementById('btnReset').addEventListener('click', () => {
+        checkboxes.forEach(c => { c.checked = false; });
+        update();
+      });
+    })();
+  </script>
+</body>
+</html>

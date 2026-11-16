@@ -1,0 +1,175 @@
+"""
+scanX Scanner Views
+
+Dashboard, scan initiation, live logs, scan history, and downloads.
+"""
+import json
+import logging
+from pathlib import Path
+
+from django.conf import settings
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.http import (
+    FileResponse,
+    Http404,
+    HttpResponse,
+    HttpResponseBadRequest,
+    JsonResponse,
+)
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+
+from .models import Scan
+from .services import (
+    get_log_lines,
+    get_scan_artifacts,
+    run_scan_in_background,
+)
+from core.validators import validate_domain
+
+logger = logging.getLogger(__name__)
+
+
+def dashboard(request):
+    """
+    Main dashboard: scan form + scan history.
+    """
+    if request.method == "POST":
+        return start_scan(request)
+
+    # GET: show dashboard with scan history
+    scans_list = Scan.objects.all()
+    paginator = Paginator(scans_list, 20)
+    page_number = request.GET.get("page")
+    scans = paginator.get_page(page_number)
+
+    context = {
+        "scans": scans,
+        "page_title": "Dashboard",
+    }
+    return render(request, "dashboard.html", context)
+
+
+@require_http_methods(["POST"])
+def start_scan(request):
+    """
+    Handle scan initiation from dashboard form.
+    Validates input, creates Scan record, launches background worker.
+    """
+    domain = request.POST.get("domain", "").strip()
+    authorized = request.POST.get("authorized") == "on"
+    authorized_by = request.POST.get("authorized_by", "").strip()
+
+    # Validation
+    errors = []
+    if not domain:
+        errors.append("Domain is required.")
+    else:
+        try:
+            validate_domain(domain)
+        except Exception as e:
+            errors.append(str(e))
+
+    if not authorized:
+        errors.append("You must confirm authorization to scan this domain.")
+
+    if not authorized_by:
+        errors.append("Authorized by (name/email) is required.")
+
+    if errors:
+        for error in errors:
+            messages.error(request, error)
+        return redirect("scanner:dashboard")
+
+    # Create scan record
+    scan = Scan.objects.create(
+        domain=domain.lower(),
+        authorized=authorized,
+        authorized_by=authorized_by,
+    )
+
+    # Launch background scan
+    run_scan_in_background(scan)
+    messages.success(request, f"Scan started for {domain} (ID: {scan.id})")
+
+    return redirect("scanner:scan_detail", scan_id=scan.id)
+
+
+def scan_detail(request, scan_id):
+    """
+    Scan detail page: live logs, status, download links.
+    """
+    scan = get_object_or_404(Scan, id=scan_id)
+    artifacts = get_scan_artifacts(scan)
+
+    context = {
+        "scan": scan,
+        "artifacts": artifacts,
+        "page_title": f"Scan: {scan.domain}",
+    }
+    return render(request, "scan_detail.html", context)
+
+
+def scan_logs(request, scan_id):
+    """
+    API endpoint for live log streaming.
+    Returns JSON: {lines: [...], offset: int, status: str}
+    Poll this endpoint every 1-2 seconds from frontend.
+    """
+    scan = get_object_or_404(Scan, id=scan_id)
+
+    try:
+        since = int(request.GET.get("since", "0"))
+    except ValueError:
+        since = 0
+
+    lines, offset, status = get_log_lines(str(scan_id), since)
+
+    return JsonResponse(
+        {
+            "lines": lines,
+            "offset": offset,
+            "status": status,
+            "is_terminal": status in ("completed", "failed"),
+        }
+    )
+
+
+def download_artifact(request, scan_id, artifact_name):
+    """
+    Download a scan artifact file.
+    """
+    scan = get_object_or_404(Scan, id=scan_id)
+    artifacts = get_scan_artifacts(scan)
+
+    if artifact_name not in artifacts:
+        raise Http404("Artifact not found")
+
+    file_path = artifacts[artifact_name]
+    if not file_path.exists():
+        raise Http404("File not found")
+
+    response = FileResponse(
+        open(file_path, "rb"),
+        as_attachment=True,
+        filename=f"{scan.domain}_{artifact_name}",
+    )
+    return response
+
+
+def scan_history(request):
+    """
+    Scan history page (can be same as dashboard or separate).
+    """
+    scans_list = Scan.objects.all()
+    paginator = Paginator(scans_list, 50)
+    page_number = request.GET.get("page")
+    scans = paginator.get_page(page_number)
+
+    context = {
+        "scans": scans,
+        "page_title": "Scan History",
+    }
+    return render(request, "history.html", context)

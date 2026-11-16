@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard — scanX{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <h1>Dashboard</h1>
+  <p>Start new reconnaissance scans and monitor active scans.</p>
+</div>
+
+<div class="dashboard-grid">
+  <!-- Scan Form Card -->
+  <section class="card scan-form" aria-labelledby="scan-form-title">
+    <div class="card-head">
+      <h2 id="scan-form-title" class="card-title" style="margin: 0;">New Scan</h2>
+    </div>
+    <form method="post" action="{% url 'scanner:start_scan' %}" novalidate>
+      {% csrf_token %}
+      <div class="card-body">
+        <div class="form-group">
+          <label for="id_domain" class="form-label">Target Domain</label>
+          <input type="text" id="id_domain" name="domain" class="form-input"
+                 placeholder="example.com" required autocomplete="off"
+                 pattern="^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
+                 title="Enter a valid domain name (e.g., example.com)">
+          <small class="form-text">Enter the authorized target domain for reconnaissance.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-checkbox">
+            <input type="checkbox" id="id_authorized" name="authorized" required>
+            <span>I confirm I am authorized to scan this target</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="id_authorized_by" class="form-label">Authorized By</label>
+          <input type="text" id="id_authorized_by" name="authorized_by" class="form-input"
+                 placeholder="Your name / email / ticket #" required>
+          <small class="form-text">Your identifier for audit trail.</small>
+        </div>
+      </div>
+      <div class="card-footer" style="justify-content: flex-end;">
+        <button type="submit" class="btn-primary" disabled>
+          Start Scan
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Recent Scans Card -->
+  <section class="card" aria-labelledby="recent-scans-title">
+    <div class="card-head">
+      <h2 id="recent-scans-title" class="card-title" style="margin: 0;">Recent Scans</h2>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      {% if scans %}
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: var(--sx-text-sm);">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--sx-border); text-align: left;">
+                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Domain</th>
+                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Status</th>
+                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Started</th>
+                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Duration</th>
+                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Results</th>
+                <th style="padding: var(--sx-space-3) var(--sx-space-4);"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for scan in scans %}
+              <tr style="border-bottom: 1px solid var(--sx-border); transition: background var(--sx-transition);" onmouseover="this.style.background='var(--sx-surface-hover)'" onmouseout="this.style.background='transparent'">
+                <td style="padding: var(--sx-space-3) var(--sx-space-4); font-family: var(--sx-font-mono); font-size: var(--sx-text-sm); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <a href="{% url 'scanner:scan_detail' scan.id %}" style="color: var(--sx-text-primary);">{{ scan.domain }}</a>
+                </td>
+                <td style="padding: var(--sx-space-3) var(--sx-space-4);">
+                  <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
+                </td>
+                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
+                  {% if scan.started_at %}{{ scan.started_at|date:"M d, H:i" }}{% else %}—{% endif %}
+                </td>
+                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">
+                  {% if scan.duration_seconds %}{{ scan.duration_seconds }}s{% else %}—{% endif %}
+                </td>
+                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
+                  {% if scan.total_subdomains %}
+                    {{ scan.total_subdomains }} subdomains · {{ scan.live_subdomains }} live · {{ scan.http_success }} OK
+                  {% else %}—{% endif %}
+                </td>
+                <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: right;">
+                  <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">View</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if scans.has_other_pages %}
+        <div class="pagination" style="margin: 0; padding: var(--sx-space-3) var(--sx-space-4); border-top: 1px solid var(--sx-border);">
+          <div class="info">Page {{ scans.number }} of {{ scans.paginator.num_pages }}</div>
+          <div class="controls">
+            {% if scans.has_previous %}
+              <a href="?page={{ scans.previous_page_number }}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-sm);">‹ Prev</a>
+            {% else %}
+              <button class="btn-ghost" disabled style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-sm);">‹ Prev</button>
+            {% endif %}
+            {% if scans.has_next %}
+              <a href="?page={{ scans.next_page_number }}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-sm);">Next ›</a>
+            {% else %}
+              <button class="btn-ghost" disabled style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-sm);">Next ›</button>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="empty-state" style="padding: var(--sx-space-8);">
+          <div class="icon">🔍</div>
+          <h2>No scans yet</h2>
+          <p>Start your first reconnaissance scan using the form on the left.</p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}
