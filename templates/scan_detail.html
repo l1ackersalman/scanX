@@ -19,6 +19,33 @@
   .detail-grid.completed-view .card-body > div { flex-direction: column; gap: var(--sx-space-2); }
   .detail-grid.completed-view .card-body > div > a,
   .detail-grid.completed-view .card-body > div > button { width: 100%; text-align: left; }
+
+  /* HTTP Results badge styles */
+  .http-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1875rem 0.5rem;
+    border-radius: var(--sx-radius-pill);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+  .http-badge-success {
+    background: rgba(53, 183, 121, 0.1);
+    color: var(--sx-success);
+    border: 1px solid rgba(53, 183, 121, 0.3);
+  }
+  .http-badge-danger {
+    background: rgba(227, 93, 106, 0.1);
+    color: var(--sx-danger);
+    border: 1px solid rgba(227, 93, 106, 0.3);
+  }
+  .http-badge-tech {
+    background: rgba(118, 185, 0, 0.1);
+    color: var(--sx-accent);
+    border: 1px solid rgba(118, 185, 0, 0.3);
+  }
 </style>
 {% endblock %}
 
@@ -133,9 +160,13 @@
                 {% for result in httpx_results %}
                 <tr style="border-bottom: 1px solid var(--sx-border);">
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ result.url }}</td>
-                  <td style="padding: var(--sx-space-3) var(--sx-space-4); font-weight: 600; color: {% if result.status_class == 'status-success' %}var(--sx-success);{% else %}var(--sx-danger);{% endif %};">{{ result.status }}</td>
+                  <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: center;">
+                    <span class="http-badge {% if result.status_class == 'status-success' %}http-badge-success{% else %}http-badge-danger{% endif %}">{{ result.status }}</span>
+                  </td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis;">{{ result.title }}</td>
-                  <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis;">{{ result.tech }}</td>
+                  <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: center;">
+                    <span class="http-badge http-badge-tech">{{ result.tech }}</span>
+                  </td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">{{ result.server }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary);">{{ result.ip }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); max-width: 120px; overflow: hidden; text-overflow: ellipsis;">{{ result.cname }}</td>
