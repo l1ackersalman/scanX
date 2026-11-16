@@ -187,7 +187,7 @@
               <tbody>
                 {% for result in httpx_results %}
                 <tr style="border-bottom: 1px solid var(--sx-border);">
-                  <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ result.url }}</td>
+                  <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary); max-width: 200px; word-wrap: break-word; overflow-wrap: break-word;">{{ result.url }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: center;">
                     <span class="http-badge {{ result.status_class }}">{{ result.status }}</span>
                   </td>
