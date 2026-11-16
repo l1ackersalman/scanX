@@ -74,6 +74,14 @@
     color: var(--sx-accent);
     border: 1px solid rgba(118, 185, 0, 0.3);
   }
+  /* Cycling colors for each technology badge */
+  .http-badge-tech-0 { background: rgba(53, 183, 121, 0.15); color: var(--sx-success); border: 1px solid rgba(53, 183, 121, 0.4); }
+  .http-badge-tech-1 { background: rgba(118, 185, 0, 0.15); color: var(--sx-accent); border: 1px solid rgba(118, 185, 0, 0.4); }
+  .http-badge-tech-2 { background: rgba(230, 162, 60, 0.15); color: var(--sx-warning); border: 1px solid rgba(230, 162, 60, 0.4); }
+  .http-badge-tech-3 { background: rgba(53, 149, 236, 0.15); color: #3595ec; border: 1px solid rgba(53, 149, 236, 0.4); }
+  .http-badge-tech-4 { background: rgba(227, 93, 106, 0.15); color: var(--sx-danger); border: 1px solid rgba(227, 93, 106, 0.4); }
+  .http-badge-tech-5 { background: rgba(155, 89, 182, 0.15); color: #9b59b6; border: 1px solid rgba(155, 89, 182, 0.4); }
+  .http-badge-tech-6 { background: rgba(230, 126, 34, 0.15); color: #e67e22; border: 1px solid rgba(230, 126, 34, 0.4); }
 </style>
 {% endblock %}
 
@@ -193,7 +201,15 @@
                   </td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); font-weight: 600; color: var(--sx-text-primary); max-width: 150px; overflow-wrap: break-word;">{{ result.title }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: center;">
-                    <span class="http-badge http-badge-tech">{{ result.tech|default:"—" }}</span>
+                    {% if result.tech %}
+                    {% for tech in result.tech %}
+                    <span class="http-badge http-badge-tech-{{ forloop.counter0 }}">{{ tech }}</span>
+                    {% empty %}
+                    <span class="http-badge http-badge-tech">—</span>
+                    {% endfor %}
+                    {% else %}
+                    <span class="http-badge http-badge-tech">—</span>
+                    {% endif %}
                   </td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">{{ result.server }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary);">{{ result.ip }}</td>
