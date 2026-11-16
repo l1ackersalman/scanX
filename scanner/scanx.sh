@@ -2,6 +2,8 @@
 
 export PATH="$PATH:$HOME/go/bin"
 
+# ========================[ SETUP ]========================
+
 # Fix for invalid working directory
 if ! pwd &>/dev/null; then
     echo "[!] Current directory is invalid (possibly deleted). Switching to home directory..."
@@ -10,6 +12,13 @@ fi
 
 # Start timing the script
 start_time=$(date +%s)
+
+# Header
+figlet "scanX"
+echo -e "\e[1;36m===========================================================\e[0m"
+echo -e "\e[1;32m    An Automated Bash Script For Advanced Reconnaissance \e[1;31m(Beta)\e[0m"
+echo -e "\e[1;36m===========================================================\e[0m\n"
+echo -e "\e[1;32m                                         - Developed by Salman Chowdhury Tasin\e[0m\n"
 
 # Help message
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
@@ -33,7 +42,7 @@ check_tool() {
         exit 1
     fi
 }
-for tool in crt subfinder assetfinder chaos dnsx ~/go/bin/httpx figlet jq; do
+for tool in crt subfinder assetfinder chaos dnsx ~/go/bin/httpx figlet; do
     check_tool "$tool"
 done
 
@@ -57,33 +66,32 @@ exec > >(tee -a "../$dir_name/report.txt") 2>&1
 
 echo "[✔] Scanning..."
 
-subfinder -d "$domain" -silent -json > subfinder.json
-echo "[+] $(wc -l < subfinder.json) domains found from subfinder."
+subfinder -d "$domain" -silent > subfinder.txt
+echo "[+] $(wc -l < subfinder.txt) domains found from subfinder."
 
 assetfinder --subs-only "$domain" > assetfinder.txt
-jq -R 'split("\n") | map(select(length > 0))' assetfinder.txt > assetfinder.json
-echo "[+] $(jq length assetfinder.json) domains found from assetfinder."
+echo "[+] $(wc -l < assetfinder.txt) domains found from assetfinder."
 
-chaos -d "$domain" -key 01691ef6-0ea0-4525-93fe-0f158d94ec16 -silent -json > chaos.json
-echo "[+] $(wc -l < chaos.json) domains found from chaos."
+chaos -d "$domain" -key 01691ef6-0ea0-4525-93fe-0f158d94ec16 -silent > chaos.txt
+echo "[+] $(wc -l < chaos.txt) domains found from chaos."
 
-crt -s -json "$domain" > crt.json
-echo "[+] $(wc -l < crt.json) domains found from crt.sh."
+crt -d "$domain" > crt.txt
+echo "[+] $(wc -l < crt.txt) domains found from crt.sh."
 
-# Merge all JSON results into alldomains.json (unique, sorted)
-jq -s '[.[][]] | unique | sort' subfinder.json assetfinder.json chaos.json crt.json > alldomains.json
-echo "[+] $(jq length alldomains.json) unique domains found."
+sort -u subfinder.txt assetfinder.txt chaos.txt crt.txt > alldomains.txt
+rm -f subfinder.txt assetfinder.txt chaos.txt crt.txt
+echo "[+] $(wc -l < alldomains.txt) unique domains found."
 
-# Create plain text list for dnsx/httpx input
-jq -r '.[]' alldomains.json > alldomains.txt
+dnsx -l alldomains.txt -silent -o live.txt > /dev/null 2>&1
+echo "[+] $(wc -l < live.txt) live domains found."
 
-dnsx -l alldomains.txt -silent -json -o live.json > /dev/null 2>&1
-echo "[+] $(wc -l < live.json) live domains found."
+/home/insomniax/go/bin/httpx -sc -title -tech-detect -server -ip -cname -probe -silent -o httpx.txt -l live.txt > /dev/null 2>&1
 
-# Extract live domains to plain text for httpx input
-jq -r '.[]' live.json > live.txt 2>/dev/null || true
+echo -e "[+] $(grep -c SUCCESS httpx.txt) \e[1;32mSUCCESS\e[0m"
 
-/home/insomniax/go/bin/httpx -sc -title -tech-detect -server -ip -cname -probe -silent -json -o httpx.json -l alldomains.txt > /dev/null 2>&1
+echo -e "[+] $(grep -c FAILED httpx.txt) \e[1;31mFAILED\e[0m"
+
+# ========================[ FINISH ]========================
 
 echo "[✔] Scan completed for $domain."  2>/dev/null
 
