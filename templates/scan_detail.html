@@ -67,7 +67,7 @@
   {% if scan.status == "completed" or scan.status == "failed" %}
   <aside>
     <!-- Statistics -->
-    <section class="card" aria-labelledby="stats-title">
+    <section class="card" aria-labelledby="stats-title" style="margin-bottom: var(--sx-space-4);">
       <div class="card-head">
         <h2 id="stats-title" class="card-title" style="margin: 0;">Statistics</h2>
       </div>
@@ -150,19 +150,6 @@
             <p>No HTTP results available.</p>
           </div>
           {% endif %}
-        </div>
-      </div>
-    </section>
-
-    <!-- Actions -->
-    <section class="card" aria-labelledby="actions-title">
-      <div class="card-head">
-        <h2 id="actions-title" class="card-title" style="margin: 0;">Actions</h2>
-      </div>
-      <div class="card-body">
-        <div style="display: flex; flex-direction: column; gap: var(--sx-space-2);">
-          <a href="{% url 'scanner:dashboard' %}" class="btn-ghost" style="text-align: center;">← Back to Dashboard</a>
-          <a href="{% url 'scanner:history' %}" class="btn-ghost" style="text-align: center;">View All Scans</a>
         </div>
       </div>
     </section>
