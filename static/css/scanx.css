@@ -114,7 +114,7 @@ header.app-bar .brand {
   font-weight: 700; font-size: var(--sx-text-xl); letter-spacing: -0.025em;
 }
 .brand-mark {
-  width: 32px; height: 32px; border-radius: 6px;
+  width: 30px; height: 14px; border-radius: 6px;
   object-fit: contain;
 }
 header.app-bar mark {
