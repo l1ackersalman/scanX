@@ -72,8 +72,10 @@
                     {{ scan.total_subdomains }} subdomains · {{ scan.live_subdomains }} live · {{ scan.http_success }} OK
                   {% else %}—{% endif %}
                 </td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: right;">
+                  <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: right;">
+                  {% if scan.status != "cancelled" %}
                   <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">View</a>
+                  {% endif %}
                 </td>
               </tr>
               {% endfor %}

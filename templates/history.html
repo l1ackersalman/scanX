@@ -48,7 +48,9 @@
                 {% else %}—{% endif %}
               </td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: right;">
-                <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">View</a>
+                  {% if scan.status != "cancelled" %}
+                  <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">View</a>
+                  {% endif %}
               </td>
             </tr>
             {% endfor %}
