@@ -43,10 +43,10 @@ done
 if [ -d "$dir_name" ]; then
     echo "[!] Directory $dir_name already exists. Creating a new directory..."
     count=1
-    while [ -d "${domain}-$(printf "%02d $count)" ]; do
+    while [ -d "${domain}-$(printf "%02d" $count)" ]; do
         ((count++))
     done
-    dir_name="${domain}-$(printf "%02d $count)"
+    dir_name="${domain}-$(printf "%02d" $count)"
 fi
 
 mkdir -p "$dir_name" || { echo "[✘] Failed to create directory. Exiting."; exit 1; }
