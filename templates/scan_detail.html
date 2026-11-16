@@ -41,8 +41,6 @@
 
 <div style="display: flex; gap: var(--sx-space-3); margin-bottom: var(--sx-space-4); flex-wrap: wrap;">
   <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
-  <span class="badge badge-info">Authorized by: {{ scan.authorized_by|default:"—" }}</span>
-  <span class="badge badge-neutral">Created {{ scan.created_at|naturaltime }}</span>
 </div>
 
 <div class="detail-grid {% if scan.status == "completed" or scan.status == "failed" %}completed-view{% endif %}">
