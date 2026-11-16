@@ -298,10 +298,10 @@ main.content {
 .status-completed { background: rgba(53, 183, 121, 0.1); color: var(--sx-success); border: 1px solid rgba(53, 183, 121, 0.3); }
 .status-failed { background: rgba(227, 93, 106, 0.1); color: var(--sx-danger); border: 1px solid rgba(227, 93, 106, 0.3); }
 .status-cancelled { background: rgba(227, 93, 106, 0.1); color: var(--sx-danger); border: 1px solid rgba(227, 93, 106, 0.3); }
-.status-badge::before {
+.status-running::before {
   content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+  animation: pulse 1.5s ease-in-out infinite;
 }
-.status-running::before { animation: pulse 1.5s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
 /* =====================================================================
