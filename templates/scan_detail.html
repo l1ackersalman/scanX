@@ -20,6 +20,9 @@
   .detail-grid.completed-view .card-body > div > a,
   .detail-grid.completed-view .card-body > div > button { width: 100%; text-align: left; }
 
+  /* Live Logs section - narrower when running */
+  .live-logs-section { max-width: 800px; margin: 0 auto; width: 100%; }
+
   /* HTTP Results badge styles */
   .http-badge {
     display: inline-flex;
@@ -91,7 +94,7 @@
 <div class="detail-grid {% if scan.status == "completed" or scan.status == "failed" %}completed-view{% endif %}">
   <!-- Main Column: Logs (shown only while scan is running) -->
   {% if scan.status == "pending" or scan.status == "running" %}
-  <section aria-labelledby="live-logs-title">
+  <section aria-labelledby="live-logs-title" class="live-logs-section">
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sx-space-3);">
       <h2 id="live-logs-title" class="section-title" style="margin: 0;">Live Logs</h2>
       <div style="display: flex; gap: var(--sx-space-2);">
