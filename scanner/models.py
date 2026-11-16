@@ -50,6 +50,7 @@ class Scan(models.Model):
     live_subdomains = models.IntegerField(null=True, blank=True)
     http_success = models.IntegerField(null=True, blank=True)
     http_failed = models.IntegerField(null=True, blank=True)
+    httpx_results = models.JSONField(null=True, blank=True, default=None)
 
     class Meta:
         ordering = ["-created_at"]

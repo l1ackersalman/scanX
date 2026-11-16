@@ -64,6 +64,7 @@ class ScanExecutor:
 
     def _parse_statistics(self, scan_subdir: Path) -> dict:
         """Parse statistics from scan output files."""
+        import json
         stats = {}
         try:
             # alldomains.txt - total unique subdomains
@@ -76,15 +77,59 @@ class ScanExecutor:
             if live.exists():
                 stats["live_subdomains"] = len(live.read_text().strip().splitlines())
 
-            # httpx.txt - HTTP results
-            httpx = scan_subdir / "httpx.txt"
+            # httpx.json - HTTP results (JSON lines)
+            httpx = scan_subdir / "httpx.json"
             if httpx.exists():
-                content = httpx.read_text()
-                stats["http_success"] = content.count("SUCCESS")
-                stats["http_failed"] = content.count("FAILED")
+                success = 0
+                failed = 0
+                for line in httpx.read_text().strip().splitlines():
+                    if not line.strip():
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        status = str(entry.get("status-code", entry.get("status_code", "")))
+                        if status.startswith("2") or status.startswith("3"):
+                            success += 1
+                        else:
+                            failed += 1
+                    except json.JSONDecodeError:
+                        if "SUCCESS" in line:
+                            success += 1
+                        elif "FAILED" in line:
+                            failed += 1
+                stats["http_success"] = success
+                stats["http_failed"] = failed
         except Exception as e:
             logger.warning(f"Failed to parse statistics: {e}")
         return stats
+
+    def _parse_httpx_results(self, scan_subdir: Path) -> list[dict]:
+        """Parse httpx.json into a list of result dicts for display."""
+        import json
+        results = []
+        try:
+            httpx = scan_subdir / "httpx.json"
+            if not httpx.exists():
+                return results
+            for line in httpx.read_text().strip().splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line)
+                    results.append({
+                        "url": entry.get("url", ""),
+                        "status": entry.get("status-code", entry.get("status_code", "N/A")),
+                        "title": entry.get("title", ""),
+                        "tech": ", ".join(entry.get("tech-detect", [])) if entry.get("tech-detect") else "",
+                        "server": entry.get("server", ""),
+                        "ip": entry.get("ip", ""),
+                        "cname": entry.get("cname", ""),
+                    })
+                except json.JSONDecodeError:
+                    continue
+        except Exception as e:
+            logger.warning(f"Failed to parse httpx results: {e}")
+        return results
 
     def _find_script_output_dir(self, cwd: Path) -> Path | None:
         """Find the subdirectory created by scanx.sh inside cwd."""
@@ -168,6 +213,8 @@ class ScanExecutor:
                 script_out_dir = self._find_script_output_dir(cwd)
                 if script_out_dir:
                     stats = self._parse_statistics(script_out_dir)
+                    httpx_results = self._parse_httpx_results(script_out_dir)
+                    stats["httpx_results"] = httpx_results
                     self.scan.mark_completed(**stats)
                     logger.info(f"Scan {self.scan.id} completed successfully")
                 else:
@@ -259,7 +306,7 @@ def get_scan_artifacts(scan: Scan) -> dict[str, Path]:
     artifact_files = {
         "alldomains.txt": "alldomains.txt",
         "live.txt": "live.txt",
-        "httpx.txt": "httpx.txt",
+        "httpx.json": "httpx.json",
         "report.txt": "report.txt",  # This is in parent dir per script
     }
 

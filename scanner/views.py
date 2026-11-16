@@ -99,6 +99,10 @@ def scan_detail(request, scan_id):
     context = {
         "scan": scan,
         "artifacts": artifacts,
+        "httpx_results": [
+            {**r, "status_class": "status-success" if str(r.get("status", "")).startswith(("2", "3")) else "status-danger"}
+            for r in (scan.httpx_results or [])
+        ],
         "page_title": f"Scan: {scan.domain}",
     }
     return render(request, "scan_detail.html", context)

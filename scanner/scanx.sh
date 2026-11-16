@@ -78,7 +78,7 @@ echo "[+] $(wc -l < alldomains.txt) unique domains found."
 dnsx -l alldomains.txt -silent -o live.txt > /dev/null 2>&1
 echo "[+] $(wc -l < live.txt) live domains found."
 
-/home/insomniax/go/bin/httpx -sc -title -tech-detect -server -ip -cname -probe -silent -o httpx.txt -l live.txt > /dev/null 2>&1
+/home/insomniax/go/bin/httpx -sc -title -tech-detect -server -ip -cname -probe -silent -json -o httpx.json -l live.txt > /dev/null 2>&1
 
 # ========================[ FINISH ]========================
 
