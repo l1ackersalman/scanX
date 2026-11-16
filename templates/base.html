@@ -22,8 +22,7 @@
     <header class="app-bar">
       <div class="bar-inner">
         <div class="brand">
-          <span class="brand-mark">S</span>
-          <span>scanX</span>
+          <img src="{% static 'images/scanx-logo.png' %}" alt="scanX Logo" class="brand-mark">
         </div>
         <nav class="nav" aria-label="Main navigation">
           <a href="{% url 'scanner:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>

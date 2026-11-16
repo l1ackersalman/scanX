@@ -114,10 +114,8 @@ header.app-bar .brand {
   font-weight: 700; font-size: var(--sx-text-xl); letter-spacing: -0.025em;
 }
 .brand-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 6px;
-  background: var(--sx-accent); color: var(--sx-background);
-  font-weight: 800; font-size: var(--sx-text-sm);
+  width: 30px; height: auto; border-radius: 6px;
+  object-fit: contain;
 }
 header.app-bar mark {
   background: var(--sx-accent); color: var(--sx-background);
