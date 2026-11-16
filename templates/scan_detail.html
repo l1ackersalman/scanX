@@ -193,7 +193,7 @@
                   </td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); font-weight: 600; color: var(--sx-text-primary); max-width: 150px; overflow-wrap: break-word;">{{ result.title }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: center;">
-                    <span class="http-badge http-badge-tech">{{ result.tech or "—" }}</span>
+                    <span class="http-badge http-badge-tech">{{ result.tech|default:"—" }}</span>
                   </td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">{{ result.server }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary);">{{ result.ip }}</td>
