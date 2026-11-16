@@ -116,25 +116,19 @@ class ScanExecutor:
                     continue
                 try:
                     entry = json.loads(line)
-                    tech_list = entry.get("tech-detect")
-                    if tech_list is None:
-                        tech_list = entry.get("tech")
-                    if tech_list is None:
-                        tech_list = entry.get("technologies")
-                    if tech_list is None:
-                        tech_list = entry.get("tech_detect")
-                    if tech_list is None:
-                        # Some httpx versions output tech as comma-separated string in 'tech-detect'
-                        tech_raw = entry.get("tech-detect", "")
-                        if isinstance(tech_raw, str) and tech_raw:
-                            tech_list = [t.strip() for t in tech_raw.split(",") if t.strip()]
-                        else:
-                            tech_list = []
+                    tech_raw = entry.get("tech-detect") or entry.get("tech") or entry.get("technologies") or entry.get("tech_detect")
+                    tech_list = []
+                    if isinstance(tech_raw, list):
+                        tech_list = [str(t).strip() for t in tech_raw if str(t).strip()]
+                    elif isinstance(tech_raw, dict):
+                        tech_list = [f"{k}:{v}" if v else k for k, v in tech_raw.items() if k]
+                    elif isinstance(tech_raw, str) and tech_raw.strip():
+                        tech_list = [t.strip() for t in tech_raw.split(",") if t.strip()]
                     results.append({
                         "url": entry.get("url", ""),
                         "status": entry.get("status-code", entry.get("status_code", "N/A")),
                         "title": entry.get("title", ""),
-                        "tech": tech_list or [],
+                        "tech": tech_list,
                         "server": entry.get("server", ""),
                         "ip": entry.get("ip", ""),
                         "cname": entry.get("cname", ""),
