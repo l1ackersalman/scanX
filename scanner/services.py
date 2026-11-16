@@ -200,6 +200,11 @@ class ScanExecutor:
                 if self._stop_event.is_set():
                     self.process.terminate()
                     break
+                # Check if scan was cancelled via web interface
+                self.scan.refresh_from_db()
+                if self.scan.status == Scan.Status.CANCELLED:
+                    self.process.terminate()
+                    break
                 log_file.write(line)
                 log_file.flush()
 
@@ -216,6 +221,12 @@ class ScanExecutor:
                 return
 
             log_file.close()
+
+            # Check if scan was cancelled via web interface
+            self.scan.refresh_from_db()
+            if self.scan.status == Scan.Status.CANCELLED:
+                logger.info(f"Scan {self.scan.id} was cancelled")
+                return
 
             if returncode == 0:
                 # Success - find script output dir and parse stats

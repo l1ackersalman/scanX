@@ -69,6 +69,11 @@
     color: var(--sx-text-secondary);
     border: 1px solid var(--sx-border);
   }
+  .http-status-cancelled {
+    background: rgba(227, 93, 106, 0.1);
+    color: var(--sx-danger);
+    border: 1px solid rgba(227, 93, 106, 0.3);
+  }
   .http-badge-tech {
     background: rgba(118, 185, 0, 0.1);
     color: var(--sx-accent);
@@ -99,6 +104,14 @@
 
 <div style="display: flex; gap: var(--sx-space-3); margin-bottom: var(--sx-space-4); flex-wrap: wrap;">
   <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
+  {% if scan.status == "pending" or scan.status == "running" %}
+  <form method="post" action="{% url 'scanner:stop_scan' scan.id %}" style="margin: 0;">
+    {% csrf_token %}
+    <button type="submit" class="btn-ghost" style="color: var(--sx-danger); border-color: var(--sx-danger);">
+      Stop Scan
+    </button>
+  </form>
+  {% endif %}
 </div>
 
 <div class="detail-grid {% if scan.status == "completed" or scan.status == "failed" %}completed-view{% endif %}">

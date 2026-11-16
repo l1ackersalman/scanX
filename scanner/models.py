@@ -20,6 +20,7 @@ class Scan(models.Model):
         RUNNING = "running", "Running"
         COMPLETED = "completed", "Completed"
         FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     domain = models.CharField(max_length=253, validators=[validate_domain])
@@ -65,7 +66,7 @@ class Scan(models.Model):
     @property
     def is_terminal(self) -> bool:
         """Check if scan is in a terminal state."""
-        return self.status in (self.Status.COMPLETED, self.Status.FAILED)
+        return self.status in (self.Status.COMPLETED, self.Status.FAILED, self.Status.CANCELLED)
 
     @property
     def duration_seconds(self) -> int | None:
@@ -110,4 +111,11 @@ class Scan(models.Model):
         self.status = self.Status.FAILED
         self.completed_at = timezone.now()
         self.error_message = error
+        self.save(update_fields=["status", "completed_at", "error_message"])
+
+    def mark_cancelled(self):
+        """Mark scan as cancelled."""
+        self.status = self.Status.CANCELLED
+        self.completed_at = timezone.now()
+        self.error_message = "Scan cancelled by user"
         self.save(update_fields=["status", "completed_at", "error_message"])

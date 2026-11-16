@@ -140,6 +140,20 @@ def scan_detail(request, scan_id):
     return render(request, "scan_detail.html", context)
 
 
+@require_http_methods(["POST"])
+def stop_scan(request, scan_id):
+    """
+    Stop a running scan.
+    """
+    scan = get_object_or_404(Scan, id=scan_id)
+    if scan.status in (Scan.Status.RUNNING, Scan.Status.PENDING):
+        scan.mark_cancelled()
+        messages.success(request, f"Scan for {scan.domain} has been cancelled.")
+    else:
+        messages.error(request, f"Cannot cancel scan with status: {scan.get_status_display()}")
+    return redirect("scanner:history")
+
+
 def scan_logs(request, scan_id):
     """
     API endpoint for live log streaming.
