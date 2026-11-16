@@ -217,11 +217,7 @@
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary);">{{ result.ip|default:"—" }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); max-width: 120px; overflow-wrap: break-word;">
                     {% if result.cname %}
-                    {% if result.tech|length_is:1 %}
-                    {{ result.cname.0 }}
-                    {% else %}
                     {{ result.cname|join:", " }}
-                    {% endif %}
                     {% else %}
                     —
                     {% endif %}
