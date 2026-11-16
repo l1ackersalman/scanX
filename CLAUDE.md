@@ -116,6 +116,7 @@ This is an authorized reconnaissance tool.
 - Use feature branches for new work.
 - Make small, meaningful commits.
 - Never commit `.env`, secrets, databases, or generated scan output.
+- **Do not push to GitHub without explicit user permission.**
 - Add tests before merging significant changes.
 - Update documentation for new features.
 
