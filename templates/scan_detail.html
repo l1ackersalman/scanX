@@ -189,7 +189,6 @@
                   <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 12%; text-align: center;">Status</th>
                   <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 20%; text-align: center;">Title</th>
                   <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 18%; text-align: center;">Technology</th>
-                  <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 10%; text-align: center;">Server</th>
                   <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 12%; text-align: center;">IP</th>
                   <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 18%; text-align: center;">CNAME</th>
                 </tr>
@@ -213,7 +212,6 @@
                     <span class="http-badge http-badge-tech">—</span>
                     {% endif %}
                   </td>
-                  <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary);">{{ result.server|default:"—" }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary);">{{ result.ip|default:"—" }}</td>
                   <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); max-width: 120px; overflow-wrap: break-word;">
                     {% if result.cname %}

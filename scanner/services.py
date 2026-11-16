@@ -131,7 +131,6 @@ class ScanExecutor:
                         "status": entry.get("status-code", entry.get("status_code", "N/A")),
                         "title": entry.get("title", ""),
                         "tech": tech_list,
-                        "server": entry.get("server", ""),
                         "ip": ip_val,
                         "cname": entry.get("cname", ""),
                     })
