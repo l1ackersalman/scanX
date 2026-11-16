@@ -61,7 +61,7 @@
          data-scan-id="{{ scan.id }}"
          data-initial-offset="0"
          data-initial-status="{{ scan.status }}">
-      <pre>{% if scan.status == "running" or scan.status == "pending" %}Waiting for logs...{% else %}Scan completed. Refreshing...{% endif %}</pre>
+      <pre></pre>
     </div>
 
     {% if scan.error_message %}
