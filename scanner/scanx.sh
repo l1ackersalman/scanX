@@ -60,7 +60,8 @@ echo "[✔] Scanning..."
 subfinder -d "$domain" -silent -json > subfinder.json
 echo "[+] $(wc -l < subfinder.json) domains found from subfinder."
 
-assetfinder --subs-only "$domain" | jq -Rs 'split("\n") | map(select(length > 0))' > assetfinder.json
+assetfinder --subs-only "$domain" > assetfinder.txt
+jq -R 'split("\n") | map(select(length > 0))' assetfinder.txt > assetfinder.json
 echo "[+] $(jq length assetfinder.json) domains found from assetfinder."
 
 chaos -d "$domain" -key 01691ef6-0ea0-4525-93fe-0f158d94ec16 -silent -json > chaos.json

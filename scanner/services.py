@@ -63,7 +63,7 @@ class ScanExecutor:
         return scan_dir
 
     def _parse_statistics(self, scan_subdir: Path) -> dict:
-        """Parse statistics from scan output JSON files."""
+        """Parse statistics from scan output JSON/text files."""
         import json
         stats = {}
         try:
@@ -89,7 +89,8 @@ class ScanExecutor:
                         continue
                     try:
                         entry = json.loads(line)
-                        status = str(entry.get("status-code", ""))
+                        # httpx may use different field names for status code
+                        status = str(entry.get("status-code", entry.get("status_code", entry.get("statuscode", ""))))
                         if status.startswith("2") or status.startswith("3"):
                             success += 1
                         else:
@@ -278,6 +279,11 @@ def get_scan_artifacts(scan: Scan) -> dict[str, Path]:
     artifact_files = {
         "alldomains.json": "alldomains.json",
         "alldomains.txt": "alldomains.txt",
+        "subfinder.json": "subfinder.json",
+        "assetfinder.json": "assetfinder.json",
+        "assetfinder.txt": "assetfinder.txt",
+        "chaos.json": "chaos.json",
+        "crt.json": "crt.json",
         "live.json": "live.json",
         "live.txt": "live.txt",
         "httpx.json": "httpx.json",
