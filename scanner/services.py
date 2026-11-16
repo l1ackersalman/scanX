@@ -63,25 +63,44 @@ class ScanExecutor:
         return scan_dir
 
     def _parse_statistics(self, scan_subdir: Path) -> dict:
-        """Parse statistics from scan output files."""
+        """Parse statistics from scan output JSON files."""
+        import json
         stats = {}
         try:
-            # alldomains.txt - total unique subdomains
-            alldomains = scan_subdir / "alldomains.txt"
+            # alldomains.json - total unique subdomains (JSON array)
+            alldomains = scan_subdir / "alldomains.json"
             if alldomains.exists():
-                stats["total_subdomains"] = len(alldomains.read_text().strip().splitlines())
+                data = json.loads(alldomains.read_text())
+                stats["total_subdomains"] = len(data) if isinstance(data, list) else 0
 
-            # live.txt - live subdomains
-            live = scan_subdir / "live.txt"
+            # live.json - live subdomains (NDJSON)
+            live = scan_subdir / "live.json"
             if live.exists():
-                stats["live_subdomains"] = len(live.read_text().strip().splitlines())
+                lines = [l for l in live.read_text().strip().splitlines() if l.strip()]
+                stats["live_subdomains"] = len(lines)
 
-            # httpx.txt - HTTP results
-            httpx = scan_subdir / "httpx.txt"
+            # httpx.json - HTTP results (NDJSON)
+            httpx = scan_subdir / "httpx.json"
             if httpx.exists():
-                content = httpx.read_text()
-                stats["http_success"] = content.count("SUCCESS")
-                stats["http_failed"] = content.count("FAILED")
+                success = 0
+                failed = 0
+                for line in httpx.read_text().strip().splitlines():
+                    if not line.strip():
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        status = str(entry.get("status-code", ""))
+                        if status.startswith("2") or status.startswith("3"):
+                            success += 1
+                        else:
+                            failed += 1
+                    except json.JSONDecodeError:
+                        if "SUCCESS" in line:
+                            success += 1
+                        elif "FAILED" in line:
+                            failed += 1
+                stats["http_success"] = success
+                stats["http_failed"] = failed
         except Exception as e:
             logger.warning(f"Failed to parse statistics: {e}")
         return stats
@@ -257,9 +276,11 @@ def get_scan_artifacts(scan: Scan) -> dict[str, Path]:
         return artifacts
 
     artifact_files = {
+        "alldomains.json": "alldomains.json",
         "alldomains.txt": "alldomains.txt",
+        "live.json": "live.json",
         "live.txt": "live.txt",
-        "httpx.txt": "httpx.txt",
+        "httpx.json": "httpx.json",
         "report.txt": "report.txt",  # This is in parent dir per script
     }
 
