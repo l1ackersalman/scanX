@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 def get_status_class(status):
     """Return CSS class for HTTP status code badge."""
+    if not status or str(status).strip() == "" or str(status).strip().upper() in ("N/A", "NONE", "NULL"):
+        return "http-status-unreachable"  # white
     s = str(status)
     if s.startswith("2"):
         return "http-status-success"   # green
