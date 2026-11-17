@@ -224,6 +224,11 @@ main.content {
   letter-spacing: 0.05em; color: var(--sx-accent);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* Slightly larger program name inside catalog cards */
+.catalog .card-publisher {
+  font-size: var(--sx-text-sm);
+}
 .card-badges { display: flex; gap: var(--sx-space-2); margin-left: auto; }
 
 .badge {
