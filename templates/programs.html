@@ -39,8 +39,7 @@
         </div>
       </div>
       <div class="card-footer">
-        <span class="card-stats">{{ item.scan_count }} scan{% if item.scan_count != 1 %}s{% endif %} ·
-          {{ item.completed_scans }} completed</span>
+        <span class="card-stats">{{ item.scan_count }} scan{% if item.scan_count != 1 %}s{% endif %}</span>
         <a href="{% url 'scanner:dashboard' %}" class="card-more">↗</a>
       </div>
     </article>
