@@ -17,7 +17,6 @@
             <tr style="border-bottom: 1px solid var(--sx-border); text-align: left;">
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Domain</th>
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Status</th>
-              <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Authorized By</th>
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Created</th>
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Started</th>
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Completed</th>
@@ -35,7 +34,6 @@
               <td style="padding: var(--sx-space-3) var(--sx-space-4);">
                 <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
               </td>
-              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.authorized_by|default:"—" }}</td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.created_at|date:"M d, Y H:i" }}</td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.started_at|date:"M d, H:i"|default:"—" }}</td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.completed_at|date:"M d, H:i"|default:"—" }}</td>
@@ -46,11 +44,6 @@
                 {% if scan.total_subdomains %}
                   {{ scan.total_subdomains }} subdomains · {{ scan.live_subdomains }} live · {{ scan.http_success }} OK
                 {% else %}—{% endif %}
-              </td>
-              <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: right;">
-                  {% if scan.status != "cancelled" %}
-                  <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">View</a>
-                  {% endif %}
               </td>
             </tr>
             {% endfor %}
