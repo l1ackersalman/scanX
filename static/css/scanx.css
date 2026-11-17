@@ -253,7 +253,7 @@ main.content {
   font-size: var(--sx-text-base); font-weight: 600; margin: 0 var(--sx-space-4) var(--sx-space-2) var(--sx-space-4);
   line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.card-body { padding: 0 var(--sx-space-4) var(--sx-space-4) var(--sx-space-4); flex: 1; display: flex; flex-direction: column; gap: var(--sx-space-3); }
+.card-body { padding: var(--sx-space-4) var(--sx-space-4) var(--sx-space-4) var(--sx-space-4); flex: 1; display: flex; flex-direction: column; gap: var(--sx-space-3); }
 .card-desc { font-size: var(--sx-text-sm); color: var(--sx-text-secondary); line-height: 1.4; margin: 0; }
 .card-tags { display: flex; flex-wrap: wrap; gap: var(--sx-space-2); }
 .tag { font-size: var(--sx-text-xs); color: var(--sx-text-secondary); border: 1px solid var(--sx-border); padding: 0.1875rem 0.5rem; border-radius: var(--sx-radius-pill); background: transparent; }
