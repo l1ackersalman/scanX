@@ -28,8 +28,14 @@
         <h3 class="card-title">{{ item.scan.name }}</h3>
         <p class="card-desc">Let it empty for future</p>
         <div class="card-tags">
-          <span class="tag">{{ item.scan.get_platform_display }}</span>
-          <span class="tag">{{ item.scan.program_type|upper }}</span>
+          <span class="badge badge-info">{{ item.scan.get_platform_display }}</span>
+          {% if item.scan.program_type == "bbp" %}
+          <span class="badge badge-success">BBP</span>
+          {% elif item.scan.program_type == "vdp" %}
+          <span class="badge badge-warning">VDP</span>
+          {% else %}
+          <span class="badge badge-danger">PENTEST</span>
+          {% endif %}
         </div>
       </div>
       <div class="card-footer">
