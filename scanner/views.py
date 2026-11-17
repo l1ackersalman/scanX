@@ -245,19 +245,13 @@ def create_program(request):
     Create a new program from the Add Program page.
     """
     if request.method == "POST":
-        title = request.POST.get("title", "").strip()
         name = request.POST.get("program_name", "").strip()
-        description = request.POST.get("description", "").strip()
         platform = request.POST.get("program_platform", "").strip()
         program_type = request.POST.get("program_type", "").strip()
 
         errors = []
-        if not title:
-            errors.append("Title is required.")
         if not name:
             errors.append("Program name is required.")
-        if not description:
-            errors.append("Description is required.")
         if not platform:
             errors.append("Platform is required.")
         if not program_type:
@@ -280,8 +274,6 @@ def create_program(request):
             program, created = Program.objects.get_or_create(
                 name=name,
                 defaults={
-                    "title": title,
-                    "description": description,
                     "platform": platform,
                     "program_type": program_type,
                 },
