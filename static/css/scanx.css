@@ -396,6 +396,19 @@ main.content {
 .stat-value { font-size: var(--sx-text-2xl); font-weight: 700; color: var(--sx-text-primary); font-variant-numeric: tabular-nums; font-family: var(--sx-font-mono); }
 
 /* =====================================================================
+   Program Catalog Grid
+   ===================================================================== */
+.catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--sx-space-5);
+  margin-top: var(--sx-space-4);
+}
+@media (min-width: 640px) { .catalog { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .catalog { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1440px) { .catalog { grid-template-columns: repeat(4, 1fr); } }
+
+/* =====================================================================
    Download Buttons
    ===================================================================== */
 .download-list { display: flex; flex-direction: column; gap: var(--sx-space-2); }
