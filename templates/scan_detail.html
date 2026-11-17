@@ -105,7 +105,7 @@
     <p style="margin: var(--sx-space-1) 0 0; color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
       Program: <strong>{{ scan.program.name }}</strong>
       <span class="badge badge-free">{{ scan.program.get_platform_display }}</span>
-      <span class="badge badge-downloadable">{{ scan.program.get_program_type_display|upper }}</span>
+      <span class="badge badge-downloadable">{{ scan.program.program_type|upper }}</span>
     </p>
     {% endif %}
   </div>

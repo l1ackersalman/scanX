@@ -35,7 +35,7 @@
           <select id="id_program" name="program" class="form-input">
             <option value="">Select a program</option>
             {% for program in programs %}
-              <option value="{{ program.id }}">{{ program.name }} ({{ program.get_platform_display }} · {{ program.get_program_type_display|upper }})</option>
+              <option value="{{ program.id }}">{{ program.name }} ({{ program.get_platform_display }} · {{ program.program_type|upper }})</option>
             {% endfor %}
           </select>
           <small class="form-text">Associate this scan with an authorized program.</small>
