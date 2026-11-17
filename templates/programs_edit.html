@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Program — scanX{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <h1>Edit Program</h1>
+  <p>Modify the details of an authorized bug bounty or disclosure program.</p>
+</div>
+
+<section class="card" style="max-width: 560px;">
+  <div class="card-head">
+    <h2 class="card-title" style="margin: 0;">Edit Program</h2>
+  </div>
+  <div class="card-body">
+    <form method="post" action="{% url 'scanner:programs_edit' program.id %}" novalidate>
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="program_title" class="form-label">Title</label>
+        <input type="text" id="program_title" name="title" class="form-input"
+               value="{{ program.title }}" required placeholder="e.g. EDU" autocomplete="off">
+        <small class="form-text">Short display title for the program card.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="program_name" class="form-label">Program Name</label>
+        <input type="text" id="program_name" name="program_name" class="form-input"
+               value="{{ program.name }}" required placeholder="e.g. Snapchat" autocomplete="off">
+        <small class="form-text">Authorized target domain or organization name.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="program_description" class="form-label">Description</label>
+        <textarea id="program_description" name="description" class="form-input form-textarea"
+                  required placeholder="e.g. Let it empty for future" rows="3" autocomplete="off">{{ program.description }}</textarea>
+        <small class="form-text">Description shown on the program card.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="program_platform" class="form-label">Platform</label>
+        <select id="program_platform" name="program_platform" class="form-input" required>
+          <option value="">Select platform</option>
+          <option value="hackerone" {% if program.platform == "hackerone" %}selected{% endif %}>HackerOne</option>
+          <option value="bugcrowd" {% if program.platform == "bugcrowd" %}selected{% endif %}>Bugcrowd</option>
+          <option value="intigriti" {% if program.platform == "intigriti" %}selected{% endif %}>Intigriti</option>
+          <option value="synack" {% if program.platform == "synack" %}selected{% endif %}>Synack</option>
+          <option value="self" {% if program.platform == "self" %}selected{% endif %}>Self</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="program_type" class="form-label">Program Type</label>
+        <select id="program_type" name="program_type" class="form-input" required>
+          <option value="">Select program type</option>
+          <option value="bbp" {% if program.program_type == "bbp" %}selected{% endif %}>BBP</option>
+          <option value="vdp" {% if program.program_type == "vdp" %}selected{% endif %}>VDP</option>
+          <option value="pentest" {% if program.program_type == "pentest" %}selected{% endif %}>PENTEST</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: var(--sx-space-3); margin-top: var(--sx-space-6);">
+        <button type="submit" class="btn-primary">Update Program</button>
+        <a href="{% url 'scanner:programs' %}" class="btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -297,3 +297,79 @@ def create_program(request):
 
     # GET request - show the create program form
     return render(request, "programs_add.html")
+
+
+@require_http_methods(["GET", "POST"])
+def edit_program(request, program_id):
+    """
+    Edit an existing program.
+    """
+    program = get_object_or_404(Program, id=program_id)
+
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        name = request.POST.get("program_name", "").strip()
+        description = request.POST.get("description", "").strip()
+        platform = request.POST.get("program_platform", "").strip()
+        program_type = request.POST.get("program_type", "").strip()
+
+        errors = []
+        if not title:
+            errors.append("Title is required.")
+        if not name:
+            errors.append("Program name is required.")
+        if not description:
+            errors.append("Description is required.")
+        if not platform:
+            errors.append("Platform is required.")
+        if not program_type:
+            errors.append("Program type is required.")
+
+        # Validate platform and program type against model choices
+        valid_platforms = [c[0] for c in Program.Platform.choices]
+        valid_types = [c[0] for c in Program.ProgramType.choices]
+        if platform and platform not in valid_platforms:
+            errors.append("Invalid platform selected.")
+        if program_type and program_type not in valid_types:
+            errors.append("Invalid program type selected.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return redirect("scanner:programs_edit", program_id=program.id)
+
+        try:
+            program.title = title
+            program.name = name
+            program.description = description
+            program.platform = platform
+            program.program_type = program_type
+            program.save()
+            messages.success(request, f"Program '{name}' updated successfully.")
+        except Exception as e:
+            messages.error(request, f"Failed to update program: {e}")
+
+        return redirect("scanner:programs")
+
+    context = {
+        "program": program,
+        "page_title": f"Edit Program — {program.name}",
+    }
+    return render(request, "programs_edit.html", context)
+
+
+@require_http_methods(["POST"])
+def delete_program(request, program_id):
+    """
+    Delete a program.
+    """
+    program = get_object_or_404(Program, id=program_id)
+    program_name = program.name
+
+    try:
+        program.delete()
+        messages.success(request, f"Program '{program_name}' deleted successfully.")
+    except Exception as e:
+        messages.error(request, f"Failed to delete program: {e}")
+
+    return redirect("scanner:programs")
