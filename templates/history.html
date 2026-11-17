@@ -4,11 +4,14 @@
 
 {% block content %}
 <div class="page-banner">
-  <h1>Scan History</h1>
+  <h1>History</h1>
   <p>All reconnaissance scans with filtering and search.</p>
 </div>
 
-<section class="card">
+<section class="card" aria-labelledby="history-title">
+  <div class="card-head">
+    <h2 id="history-title" class="card-title" style="margin: 0;">Scan History</h2>
+  </div>
   <div class="card-body" style="padding: 0;">
     {% if scans %}
       <div style="overflow-x: auto;">
@@ -58,7 +61,7 @@
 
       <!-- Pagination -->
       {% if scans.has_other_pages %}
-      <div class="pagination">
+      <div class="pagination" style="margin: 0; padding: var(--sx-space-3) var(--sx-space-4); border-top: 1px solid var(--sx-border);">
         <div class="info" style="margin-left: var(--sx-space-3);">Page {{ scans.number }} of {{ scans.paginator.num_pages }}</div>
         <div class="controls" style="margin-right: var(--sx-space-2); margin-top: calc(var(--sx-space-2) * -1);">
           {% if scans.has_previous %}
@@ -75,7 +78,7 @@
       </div>
       {% endif %}
     {% else %}
-      <div class="empty-state">
+      <div class="empty-state" style="padding: var(--sx-space-8);">
         <div class="icon">📋</div>
         <h2>No scans recorded</h2>
         <p>Start a new scan from the <a href="{% url 'scanner:dashboard' %}" style="color: var(--sx-accent);">Dashboard</a>.</p>
