@@ -118,13 +118,7 @@
   <!-- Main Column: Logs (shown only while scan is running) -->
   {% if scan.status == "pending" or scan.status == "running" %}
   <section aria-labelledby="live-logs-title" class="live-logs-section">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sx-space-3);">
-      <h2 id="live-logs-title" class="section-title" style="margin: 0;">Live Logs</h2>
-      <div style="display: flex; gap: var(--sx-space-2);">
-        <button id="clear-logs" class="btn-ghost" style="font-size: var(--sx-text-xs);">Clear</button>
-        <button id="pause-logs" class="btn-ghost" style="font-size: var(--sx-text-xs);">Pause</button>
-      </div>
-    </div>
+    <h2 id="live-logs-title" class="section-title" style="margin: 0;">Live Logs</h2>
 
     <div id="log-viewer" class="log-viewer"
          data-scan-id="{{ scan.id }}"
