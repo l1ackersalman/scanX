@@ -56,7 +56,7 @@
               {% for scan in scans %}
               <tr style="border-bottom: 1px solid var(--sx-border); transition: background var(--sx-transition);" onmouseover="this.style.background='var(--sx-surface-hover)'" onmouseout="this.style.background='transparent'">
                 <td style="padding: var(--sx-space-3) var(--sx-space-4); font-family: var(--sx-font-mono); font-size: var(--sx-text-sm); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                  <a href="{% url 'scanner:scan_detail' scan.id %}" style="color: var(--sx-text-primary);">{{ scan.domain }}</a>
+                  <a href="{% url 'scanner:scan_detail' scan.id %}" style="color: var(--sx-accent); font-weight: 600;">{{ scan.domain }}</a>
                 </td>
                 <td style="padding: var(--sx-space-3) var(--sx-space-4);">
                   <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>

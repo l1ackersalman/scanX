@@ -29,7 +29,7 @@
             {% for scan in scans %}
             <tr style="border-bottom: 1px solid var(--sx-border);">
               <td style="padding: var(--sx-space-3) var(--sx-space-4); font-family: var(--sx-font-mono); font-size: var(--sx-text-sm); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                <a href="{% url 'scanner:scan_detail' scan.id %}">{{ scan.domain }}</a>
+                <a href="{% url 'scanner:scan_detail' scan.id %}" style="font-weight: 600;">{{ scan.domain }}</a>
               </td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4);">
                 <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
@@ -45,6 +45,11 @@
                   {{ scan.total_subdomains }} subdomains · {{ scan.live_subdomains }} live · {{ scan.http_success }} OK
                 {% else %}—{% endif %}
               </td>
+              <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: right;">
+                {% if scan.status == "completed" %}
+                <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">View</a>
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -54,20 +59,13 @@
       <!-- Pagination -->
       {% if scans.has_other_pages %}
       <div class="pagination">
-        <div class="info">Page {{ scans.number }} of {{ scans.paginator.num_pages }} ({{ scans.paginator.count }} scans)</div>
-        <div class="controls">
+        <div class="info" style="margin-left: var(--sx-space-3);">Page {{ scans.number }} of {{ scans.paginator.num_pages }}</div>
+        <div class="controls" style="margin-right: var(--sx-space-2); margin-top: calc(var(--sx-space-2) * -1);">
           {% if scans.has_previous %}
             <a href="?page={{ scans.previous_page_number }}" class="btn-ghost">‹ Prev</a>
           {% else %}
             <button class="btn-ghost" disabled>‹ Prev</button>
           {% endif %}
-          {% for num in scans.paginator.page_range %}
-            {% if scans.number == num %}
-              <button class="btn-ghost" disabled aria-current="page">{{ num }}</button>
-            {% elif num > scans.number|add:'-3' and num < scans.number|add:'3' %}
-              <a href="?page={{ num }}" class="btn-ghost">{{ num }}</a>
-            {% endif %}
-          {% endfor %}
           {% if scans.has_next %}
             <a href="?page={{ scans.next_page_number }}" class="btn-ghost">Next ›</a>
           {% else %}

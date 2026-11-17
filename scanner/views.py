@@ -184,7 +184,7 @@ def scan_history(request):
     Scan history page (can be same as dashboard or separate).
     """
     scans_list = Scan.objects.all()
-    paginator = Paginator(scans_list, 50)
+    paginator = Paginator(scans_list, 10)
     page_number = request.GET.get("page")
     scans = paginator.get_page(page_number)
 
@@ -193,3 +193,35 @@ def scan_history(request):
         "page_title": "Scan History",
     }
     return render(request, "history.html", context)
+
+def programs(request):
+    """
+    Programs page - shows all Programs with statistics.
+    """
+    programs_list = Program.objects.all().order_by('-created_at')
+
+    programs_with_stats = []
+    for program in programs_list:
+        scans = Scan.objects.filter(program=program)
+        total_subdomains = sum(s.total_subdomains or 0 for s in scans)
+        live_subdomains = sum(s.live_subdomains or 0 for s in scans)
+        http_success = sum(s.http_success or 0 for s in scans)
+        completed_scans = scans.filter(status=Scan.Status.COMPLETED).count()
+        last_completed = scans.filter(status=Scan.Status.COMPLETED).order_by('-completed_at').first()
+        last_scanned = last_completed.completed_at if last_completed else None
+
+        programs_with_stats.append({
+            'scan': program,
+            'total_subdomains': total_subdomains,
+            'live_subdomains': live_subdomains,
+            'http_success': http_success,
+            'scan_count': scans.count(),
+            'completed_scans': completed_scans,
+            'last_scanned': last_scanned,
+        })
+
+    context = {
+        'programs': programs_with_stats,
+        'page_title': 'Programs',
+    }
+    return render(request, 'programs.html', context)

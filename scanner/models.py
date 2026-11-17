@@ -46,6 +46,15 @@ class Scan(models.Model):
     authorized = models.BooleanField(default=False)
     authorized_by = models.CharField(max_length=255, blank=True, default="")
 
+    # Program association
+    program = models.ForeignKey(
+        'scanner.Program',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='scans',
+    )
+
     # Scan metadata (populated after completion)
     total_subdomains = models.IntegerField(null=True, blank=True)
     live_subdomains = models.IntegerField(null=True, blank=True)
@@ -119,3 +128,35 @@ class Scan(models.Model):
         self.completed_at = timezone.now()
         self.error_message = "Scan cancelled by user"
         self.save(update_fields=["status", "completed_at", "error_message"])
+
+class Program(models.Model):
+    """
+    Authorized target program for reconnaissance.
+    """
+
+    class Platform(models.TextChoices):
+        HACKERONE = "hackerone", "HackerOne"
+        BUG_CROWD = "bugcrowd", "Bugcrowd"
+        INTIGRITI = "intigriti", "Intigriti"
+        SYNACK = "synack", "Synack"
+        SELF = "self", "Self"
+
+    class ProgramType(models.TextChoices):
+        BBP = "bbp", "Bug Bounty Program"
+        VDP = "vdp", "Vulnerability Disclosure Program"
+        PENTEST = "pentest", "Pentest"
+
+    name = models.CharField(max_length=255, help_text="Authorized target domain or organization name")
+    platform = models.CharField(max_length=50, choices=Platform.choices)
+    program_type = models.CharField(max_length=50, choices=ProgramType.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["platform"]),
+            models.Index(fields=["program_type"]),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.platform})"
