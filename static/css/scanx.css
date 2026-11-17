@@ -228,6 +228,12 @@ main.content {
 /* Slightly larger program name inside catalog cards */
 .catalog .card-publisher {
   font-size: var(--sx-text-sm);
+  margin-top: var(--sx-space-1);
+}
+
+/* Align card head content to top in catalog so name sits lower */
+.catalog .card-head {
+  align-items: flex-start;
 }
 .card-badges { display: flex; gap: var(--sx-space-2); margin-left: auto; }
 
