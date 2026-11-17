@@ -187,6 +187,7 @@
     </section>
 
     <!-- HTTP Results (between Statistics and Actions) -->
+    {% if scan.status == 'completed' %}
     <section aria-labelledby="httpx-results-title">
       <div class="card" aria-labelledby="httpx-results-title">
         <div class="card-head">
