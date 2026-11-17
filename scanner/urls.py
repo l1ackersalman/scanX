@@ -18,6 +18,6 @@ urlpatterns = [
     path("scan/<uuid:scan_id>/cancel/", views.stop_scan, name="stop_scan"),
     path("programs/", views.programs, name="programs"),
     path("programs/add/", views.create_program, name="programs_add"),
-    path("programs/edit/<uuid:program_id>/", views.edit_program, name="programs_edit"),
-    path("programs/delete/<uuid:program_id>/", views.delete_program, name="programs_delete"),
+    path("programs/edit/<int:program_id>/", views.edit_program, name="programs_edit"),
+    path("programs/delete/<int:program_id>/", views.delete_program, name="programs_delete"),
 ]
