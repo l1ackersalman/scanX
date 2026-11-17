@@ -26,8 +26,8 @@
         </div>
         <nav class="nav" aria-label="Main navigation">
           <a href="{% url 'scanner:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
-          <a href="{% url 'scanner:history' %}" {% if request.resolver_match.url_name == 'history' %}aria-current="page"{% endif %}>History</a>
           <a href="{% url 'scanner:programs' %}" {% if request.resolver_match.url_name == 'programs' %}aria-current="page"{% endif %}>Programs</a>
+          <a href="{% url 'scanner:history' %}" {% if request.resolver_match.url_name == 'history' %}aria-current="page"{% endif %}>History</a>
           <span class="nav-placeholder">Assets</span>
           <span class="nav-placeholder">Reports</span>
           <span class="nav-placeholder">Settings</span>

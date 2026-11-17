@@ -147,6 +147,8 @@ class Program(models.Model):
         PENTEST = "pentest", "Pentest"
 
     name = models.CharField(max_length=255, help_text="Authorized target domain or organization name")
+    title = models.CharField(max_length=100, blank=True, default="", help_text="Short display title (e.g. EDU, NEW)")
+    description = models.TextField(blank=True, default="", help_text="Program description (e.g. Let it empty for future)")
     platform = models.CharField(max_length=50, choices=Platform.choices)
     program_type = models.CharField(max_length=50, choices=ProgramType.choices)
     created_at = models.DateTimeField(auto_now_add=True)
