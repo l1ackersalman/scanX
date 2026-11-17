@@ -29,6 +29,17 @@
                  title="Enter a valid domain name">
           <small class="form-text">Enter the target domain for reconnaissance.</small>
         </div>
+
+        <div class="form-group">
+          <label for="id_program" class="form-label">Program (optional)</label>
+          <select id="id_program" name="program" class="form-input">
+            <option value="">Select a program</option>
+            {% for program in programs %}
+              <option value="{{ program.id }}">{{ program.name }} ({{ program.get_platform_display }} · {{ program.get_program_type_display|upper }})</option>
+            {% endfor %}
+          </select>
+          <small class="form-text">Associate this scan with an authorized program.</small>
+        </div>
       </div>
     </form>
   </section>

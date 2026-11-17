@@ -19,7 +19,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Scan
+from .models import Scan, Program
 from .services import (
     get_log_lines,
     run_scan_in_background,
@@ -76,8 +76,11 @@ def dashboard(request):
     page_number = request.GET.get("page")
     scans = paginator.get_page(page_number)
 
+    programs = Program.objects.all().order_by("-created_at")
+
     context = {
         "scans": scans,
+        "programs": programs,
         "page_title": "Dashboard",
     }
     return render(request, "dashboard.html", context)
@@ -112,6 +115,15 @@ def start_scan(request):
         authorized=False,
         authorized_by="",
     )
+
+    # Link scan to a program if one was selected
+    program_id = request.POST.get("program", "").strip()
+    if program_id:
+        try:
+            scan.program = Program.objects.get(id=program_id)
+            scan.save(update_fields=["program"])
+        except Program.DoesNotExist:
+            pass
 
     # Launch background scan
     run_scan_in_background(scan)
@@ -225,3 +237,55 @@ def programs(request):
         'page_title': 'Programs',
     }
     return render(request, 'programs.html', context)
+
+
+@require_http_methods(["GET", "POST"])
+def create_program(request):
+    """
+    Create a new program from the Add Program page.
+    """
+    if request.method == "POST":
+        name = request.POST.get("program_name", "").strip()
+        platform = request.POST.get("program_platform", "").strip()
+        program_type = request.POST.get("program_type", "").strip()
+
+        errors = []
+        if not name:
+            errors.append("Program name is required.")
+        if not platform:
+            errors.append("Platform is required.")
+        if not program_type:
+            errors.append("Program type is required.")
+
+        # Validate platform and program type against model choices
+        valid_platforms = [c[0] for c in Program.Platform.choices]
+        valid_types = [c[0] for c in Program.ProgramType.choices]
+        if platform and platform not in valid_platforms:
+            errors.append("Invalid platform selected.")
+        if program_type and program_type not in valid_types:
+            errors.append("Invalid program type selected.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return redirect("scanner:programs_add")
+
+        try:
+            program, created = Program.objects.get_or_create(
+                name=name,
+                defaults={
+                    "platform": platform,
+                    "program_type": program_type,
+                },
+            )
+            if created:
+                messages.success(request, f"Program '{name}' created successfully.")
+            else:
+                messages.info(request, f"Program '{name}' already exists.")
+        except Exception as e:
+            messages.error(request, f"Failed to create program: {e}")
+
+        return redirect("scanner:programs")
+
+    # GET request - show the create program form
+    return render(request, "programs_add.html")

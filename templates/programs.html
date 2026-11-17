@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Programs — scanX{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <h1>Programs</h1>
+  <p>Authorized bug bounty and disclosure programs with scope configuration and scan history.</p>
+</div>
+
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="count">Program<span class="number">{{ programs|length }}</span></div>
+  </div>
+  <a href="{% url 'scanner:programs_add' %}" class="btn-primary">Add Program</a>
+</div>
+
+{% if programs %}
+  <div class="catalog" role="list" aria-label="Program catalog">
+    {% for item in programs %}
+    <article class="card" role="listitem">
+      <div class="card-head">
+        <div class="card-meta">
+          <div class="card-publisher">{{ item.scan.name }}</div>
+          <div class="card-badges">
+            <span class="badge badge-free">{{ item.scan.get_platform_display }}</span>
+            <span class="badge badge-downloadable">{{ item.scan.get_program_type_display|upper }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">{{ item.scan.name }}</h3>
+        <p class="card-desc">Let it empty for future</p>
+        <div class="card-tags">
+          <span class="tag">{{ item.scan.get_platform_display }}</span>
+          <span class="tag">{{ item.scan.get_program_type_display|upper }}</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="card-stats">{{ item.scan_count }} scan{% if item.scan_count != 1 %}s{% endif %} ·
+          {{ item.completed_scans }} completed</span>
+        <a href="{% url 'scanner:dashboard' %}" class="card-more">↗</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <div class="icon">📋</div>
+    <h2>No programs recorded</h2>
+    <p>Start by adding your first authorized program.</p>
+    <a href="{% url 'scanner:programs_add' %}" class="btn-primary" style="margin-top: var(--sx-space-4); display: inline-block;">Add Program</a>
+  </div>
+{% endif %}
+{% endblock %}

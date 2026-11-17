@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Add Program — scanX{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <h1>Add Program</h1>
+  <p>Register an authorized bug bounty or disclosure program.</p>
+</div>
+
+<section class="card" style="max-width: 560px;">
+  <div class="card-head">
+    <h2 class="card-title" style="margin: 0;">New Program</h2>
+  </div>
+  <div class="card-body">
+    <form method="post" action="{% url 'scanner:programs_add' %}" novalidate>
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="program_name" class="form-label">Program Name</label>
+        <input type="text" id="program_name" name="program_name" class="form-input"
+               required placeholder="e.g. Snapchat" autocomplete="off">
+        <small class="form-text">Authorized target domain or organization name.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="program_platform" class="form-label">Platform</label>
+        <select id="program_platform" name="program_platform" class="form-input" required>
+          <option value="">Select platform</option>
+          <option value="hackerone">HackerOne</option>
+          <option value="bugcrowd">Bugcrowd</option>
+          <option value="intigriti">Intigriti</option>
+          <option value="synack">Synack</option>
+          <option value="self">Self</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="program_type" class="form-label">Program Type</label>
+        <select id="program_type" name="program_type" class="form-input" required>
+          <option value="">Select program type</option>
+          <option value="bbp">Bug Bounty Program (BBP)</option>
+          <option value="vdp">Vulnerability Disclosure Program (VDP)</option>
+          <option value="pentest">Pentest</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: var(--sx-space-3); margin-top: var(--sx-space-6);">
+        <button type="submit" class="btn-primary">Create Program</button>
+        <a href="{% url 'scanner:programs' %}" class="btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
