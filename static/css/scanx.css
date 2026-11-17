@@ -210,7 +210,15 @@ main.content {
   background: var(--sx-background); object-fit: cover;
   border: 1px solid var(--sx-border); flex-shrink: 0;
 }
-.card-meta { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; }
+.card-meta {
+  display: flex;
+  flex-direction: row;
+  gap: 0.125rem;
+  min-width: 0;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
 .card-publisher {
   font-size: var(--sx-text-xs); font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.05em; color: var(--sx-accent);
