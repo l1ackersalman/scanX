@@ -21,12 +21,12 @@
     <article class="card" role="listitem">
       <div class="card-head">
         <div class="card-meta">
-          <div class="card-publisher">{{ item.scan.name }}</div>
+          <div class="card-publisher">{{ item.scan.title }}</div>
         </div>
       </div>
       <div class="card-body">
-        <h3 class="card-title">{{ item.scan.name }}</h3>
-        <p class="card-desc">Let it empty for future</p>
+        <h3 class="card-title">{{ item.scan.title }}</h3>
+        <p class="card-desc">{{ item.scan.description }}</p>
         <div class="card-tags">
           <span class="badge badge-info">{{ item.scan.get_platform_display }}</span>
           {% if item.scan.program_type == "bbp" %}
