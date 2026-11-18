@@ -142,9 +142,9 @@ def scan_detail(request, scan_id):
     """
     scan = get_object_or_404(Scan, id=scan_id)
 
-    # Prepare and paginate HTTP results (50 per page)
+    # Prepare raw HTTP results
     httpx_results_raw = scan.httpx_results or []
-    httpx_results = [
+    httpx_results_all = [
         {**r,
          "status_class": get_status_class(r.get("status", "")),
          "tech": _normalize_tech(r.get("tech"))
@@ -152,7 +152,47 @@ def scan_detail(request, scan_id):
         for r in httpx_results_raw
     ]
 
-    paginator = Paginator(httpx_results, 50)
+    # --- Filtering ---
+    status_filter = request.GET.get("status", "").strip()
+    tech_filter = request.GET.get("tech", "").strip()
+    ip_filter = request.GET.get("ip", "").strip()
+    cname_filter = request.GET.get("cname", "").strip()
+
+    # Collect unique filter options from ALL results (unfiltered)
+    all_statuses = sorted({str(r.get("status", "")) for r in httpx_results_all if str(r.get("status", ""))})
+    all_technologies = sorted({t for r in httpx_results_all for t in r.get("tech", [])})
+    all_ips = sorted({str(r.get("ip", "")) for r in httpx_results_all if str(r.get("ip", ""))})
+    all_cnames = sorted({str(c) for r in httpx_results_all for c in (r.get("cname") or []) if str(c)})
+
+    # Apply filters
+    filtered_results = httpx_results_all
+
+    if status_filter:
+        filtered_results = [
+            r for r in filtered_results
+            if str(r.get("status", "")).startswith(status_filter)
+        ]
+
+    if tech_filter:
+        filtered_results = [
+            r for r in filtered_results
+            if any(tech_filter.lower() in t.lower() for t in r.get("tech", []))
+        ]
+
+    if ip_filter:
+        filtered_results = [
+            r for r in filtered_results
+            if ip_filter.lower() in str(r.get("ip", "")).lower()
+        ]
+
+    if cname_filter:
+        filtered_results = [
+            r for r in filtered_results
+            if any(cname_filter.lower() in str(c).lower() for c in (r.get("cname") or []))
+        ]
+
+    # Pagination on filtered results
+    paginator = Paginator(filtered_results, 50)
     page_number = request.GET.get("page")
     httpx_page = paginator.get_page(page_number)
 
@@ -160,6 +200,15 @@ def scan_detail(request, scan_id):
         "scan": scan,
         "httpx_page": httpx_page,
         "httpx_results": httpx_page,
+        "all_statuses": all_statuses,
+        "all_technologies": all_technologies,
+        "all_ips": all_ips,
+        "all_cnames": all_cnames,
+        "total_technologies": len(all_technologies),
+        "current_status": status_filter,
+        "current_tech": tech_filter,
+        "current_ip": ip_filter,
+        "current_cname": cname_filter,
         "page_title": f"Scan: {scan.domain}",
     }
     return render(request, "scan_detail.html", context)
@@ -398,6 +447,7 @@ def program_detail(request, program_id):
 
     # Scan-operation counts (count all scans, not deduplicated by domain)
     total_scans = scans_qs.count()
+    total_targets = scans_qs.values("domain").distinct().count()
     completed_scans = scans_qs.filter(status=Scan.Status.COMPLETED).count()
     running_scans = scans_qs.filter(status=Scan.Status.RUNNING).count()
     failed_scans = scans_qs.filter(status=Scan.Status.FAILED).count()
@@ -413,6 +463,7 @@ def program_detail(request, program_id):
         domain_scans[scan.domain].append(scan)
 
     domain_stats = []
+    all_technologies = set()
     for domain, scans in domain_scans.items():
         latest_scan = max(scans, key=lambda s: s.created_at)
         domain_stats.append(
@@ -425,6 +476,28 @@ def program_detail(request, program_id):
                 "http_failed": max((s.http_failed or 0 for s in scans), default=0),
             }
         )
+
+        # Collect unique technologies across all scans
+        for scan in scans:
+            httpx_results = scan.httpx_results or []
+            for r in httpx_results:
+                tech_raw = (
+                    r.get("tech-detect")
+                    or r.get("tech")
+                    or r.get("technologies")
+                    or r.get("tech_detect")
+                    or r.get("technology")
+                    or r.get("webserver")
+                    or r.get("server")
+                    or r.get("http-server")
+                )
+                if tech_raw:
+                    if isinstance(tech_raw, list):
+                        all_technologies.update(str(t).strip() for t in tech_raw if str(t).strip())
+                    elif isinstance(tech_raw, dict):
+                        all_technologies.update(str(k).strip() for k in tech_raw if str(k).strip())
+                    elif isinstance(tech_raw, str) and tech_raw.strip():
+                        all_technologies.update(t.strip() for t in tech_raw.split(",") if t.strip())
 
     # Sort by latest scan date descending
     domain_stats.sort(key=lambda d: d["latest_scan"].created_at, reverse=True)
@@ -451,6 +524,8 @@ def program_detail(request, program_id):
         "program": program,
         "domain_stats": domain_page,
         "total_scans": total_scans,
+        "total_targets": total_targets,
+        "total_technologies": len(all_technologies),
         "completed_scans": completed_scans,
         "running_scans": running_scans,
         "failed_scans": failed_scans,

@@ -97,6 +97,11 @@
 {% block content %}
 <div class="scan-header">
   <div>
+    {% if scan.program %}
+    <a href="{% url 'scanner:program_detail' scan.program.id %}" class="btn-ghost" style="margin-top: var(--sx-space-1); padding: var(--sx-space-2) var(--sx-space-4); font-size: var(--sx-text-sm); display: inline-block;">
+      ← Back to {{ scan.program.name }}
+    </a>
+    {% endif %}
     <h1>{{ scan.domain }}</h1>
     <p style="margin: var(--sx-space-1) 0 0; color: var(--sx-text-secondary);">
       Scan ID: <code style="font-size: var(--sx-text-sm);">{{ scan.id }}</code>
@@ -178,6 +183,10 @@
             <div class="stat-label">HTTP Failed</div>
             <div class="stat-value" style="color: var(--sx-danger);">{{ scan.http_failed|default:"—" }}</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-label">Technologies</div>
+            <div class="stat-value">{{ total_technologies }}</div>
+          </div>
         </div>
 
         <div style="margin-top: var(--sx-space-4); padding-top: var(--sx-space-4); border-top: 1px solid var(--sx-border); font-size: var(--sx-text-sm); color: var(--sx-text-secondary);">
@@ -196,6 +205,68 @@
         </div>
       </div>
     </section>
+
+    <!-- HTTP Results Filter (isolated container, outside HTTP Results card) -->
+    {% if scan.status == 'completed' %}
+    {% if all_statuses or all_technologies or all_ips or all_cnames %}
+    <section aria-labelledby="filter-title">
+      <div class="card" aria-labelledby="filter-title">
+        <div class="card-head">
+          <h2 id="filter-title" class="card-title" style="margin: 0;">Filter HTTP Results</h2>
+        </div>
+        <div class="card-body" style="padding: var(--sx-space-3) var(--sx-space-4);">
+          <form method="get" style="display: flex; flex-wrap: wrap; gap: var(--sx-space-3); align-items: center; margin: 0;">
+            <input type="hidden" name="page" value="1">
+
+            <div style="display: flex; flex-direction: column; gap: var(--sx-space-1); min-width: 140px;">
+              <label style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; white-space: nowrap;">Status Code</label>
+              <select name="status" class="form-input" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1); width: 100%;" onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for s in all_statuses %}
+                <option value="{{ s }}" {% if current_status == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: var(--sx-space-1); min-width: 160px;">
+              <label style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; white-space: nowrap;">Technology</label>
+              <select name="tech" class="form-input" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1); width: 100%;" onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for tech in all_technologies %}
+                <option value="{{ tech }}" {% if current_tech == tech %}selected{% endif %}>{{ tech }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: var(--sx-space-1); min-width: 140px;">
+              <label style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; white-space: nowrap;">IP Address</label>
+              <select name="ip" class="form-input" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1); width: 100%;" onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for ip in all_ips %}
+                <option value="{{ ip }}" {% if current_ip == ip %}selected{% endif %}>{{ ip }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: var(--sx-space-1); min-width: 160px;">
+              <label style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; white-space: nowrap;">CNAME</label>
+              <select name="cname" class="form-input" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1); width: 100%;" onchange="this.form.submit()">
+                <option value="">All</option>
+                {% for cname in all_cnames %}
+                <option value="{{ cname }}" {% if current_cname == cname %}selected{% endif %}>{{ cname }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            {% if current_status or current_tech or current_ip or current_cname %}
+            <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1) var(--sx-space-3); margin-left: var(--sx-space-2); margin-top: calc(var(--sx-space-3) - var(--sx-space-1));">Clear Filters</a>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+    {% endif %}
 
     <!-- HTTP Results (between Statistics and Actions) -->
     {% if scan.status == 'completed' %}
