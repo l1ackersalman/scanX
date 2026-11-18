@@ -31,14 +31,14 @@
         </div>
 
         <div class="form-group">
-          <label for="id_program" class="form-label">Program (optional)</label>
-          <select id="id_program" name="program" class="form-input">
+          <label for="id_program" class="form-label">Program <span style="color: var(--sx-danger);">*</span></label>
+          <select id="id_program" name="program" class="form-input" required>
             <option value="">Select a program</option>
             {% for program in programs %}
               <option value="{{ program.id }}">{% if program.title %}{{ program.title }}{% else %}{{ program.name }}{% endif %} ({{ program.get_platform_display }} · {{ program.program_type|upper }})</option>
             {% endfor %}
           </select>
-          <small class="form-text">Associate this scan with an authorized program.</small>
+          <small class="form-text">Select an authorized program for this scan.</small>
         </div>
       </div>
     </form>

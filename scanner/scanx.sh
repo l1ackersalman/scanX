@@ -65,7 +65,7 @@ echo "[+] $(wc -l < subfinder.txt) domains found from subfinder."
 assetfinder --subs-only "$domain" > assetfinder.txt
 echo "[+] $(wc -l < assetfinder.txt) domains found from assetfinder."
 
-chaos -d "$domain" -key 01691ef6-0ea0-4525-93fe-0f158d94ec16 -silent > chaos.txt
+chaos -d "$domain" -key "$CHAOS_API_KEY" -silent > chaos.txt
 echo "[+] $(wc -l < chaos.txt) domains found from chaos."
 
 crt -s "$domain" > crt.txt

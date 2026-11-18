@@ -93,6 +93,7 @@ def start_scan(request):
     Validates input, creates Scan record, launches background worker.
     """
     domain = request.POST.get("domain", "").strip()
+    program_id = request.POST.get("program", "").strip()
 
     # Validation
     errors = []
@@ -103,6 +104,14 @@ def start_scan(request):
             validate_domain(domain)
         except Exception as e:
             errors.append(str(e))
+
+    if not program_id:
+        errors.append("Program selection is required.")
+    else:
+        try:
+            Program.objects.get(id=program_id)
+        except Program.DoesNotExist:
+            errors.append("Selected program does not exist.")
 
     if errors:
         for error in errors:
@@ -116,14 +125,9 @@ def start_scan(request):
         authorized_by="",
     )
 
-    # Link scan to a program if one was selected
-    program_id = request.POST.get("program", "").strip()
-    if program_id:
-        try:
-            scan.program = Program.objects.get(id=program_id)
-            scan.save(update_fields=["program"])
-        except Program.DoesNotExist:
-            pass
+    # Link scan to the selected program (now required)
+    scan.program = Program.objects.get(id=program_id)
+    scan.save(update_fields=["program"])
 
     # Launch background scan
     run_scan_in_background(scan)
@@ -383,12 +387,7 @@ def program_detail(request, program_id):
     program = get_object_or_404(Program, id=program_id)
     scans_qs = Scan.objects.filter(program=program).order_by("-created_at")
 
-    # Pagination
-    paginator = Paginator(scans_qs, 10)
-    page_number = request.GET.get("page")
-    scans = paginator.get_page(page_number)
-
-    # Aggregate statistics across all scans for this program
+    # Scan-operation counts (count all scans, not deduplicated by domain)
     total_scans = scans_qs.count()
     completed_scans = scans_qs.filter(status=Scan.Status.COMPLETED).count()
     running_scans = scans_qs.filter(status=Scan.Status.RUNNING).count()
@@ -396,10 +395,36 @@ def program_detail(request, program_id):
     pending_scans = scans_qs.filter(status=Scan.Status.PENDING).count()
     cancelled_scans = scans_qs.filter(status=Scan.Status.CANCELLED).count()
 
-    total_subdomains = sum(s.total_subdomains or 0 for s in scans_qs)
-    live_subdomains = sum(s.live_subdomains or 0 for s in scans_qs)
-    http_success = sum(s.http_success or 0 for s in scans_qs)
-    http_failed = sum(s.http_failed or 0 for s in scans_qs)
+    # Group scans by domain; for each domain take the MAX of each metric
+    # so a domain scanned repeatedly is counted only once (at its peak).
+    from collections import defaultdict
+
+    domain_scans = defaultdict(list)
+    for scan in scans_qs:
+        domain_scans[scan.domain].append(scan)
+
+    domain_stats = []
+    for domain, scans in domain_scans.items():
+        latest_scan = max(scans, key=lambda s: s.created_at)
+        domain_stats.append(
+            {
+                "domain": domain,
+                "latest_scan": latest_scan,
+                "total_subdomains": max((s.total_subdomains or 0 for s in scans), default=0),
+                "live_subdomains": max((s.live_subdomains or 0 for s in scans), default=0),
+                "http_success": max((s.http_success or 0 for s in scans), default=0),
+                "http_failed": max((s.http_failed or 0 for s in scans), default=0),
+            }
+        )
+
+    # Sort by latest scan date descending
+    domain_stats.sort(key=lambda d: d["latest_scan"].created_at, reverse=True)
+
+    # Sum the per-domain maximums across unique domains
+    total_subdomains = sum(d["total_subdomains"] for d in domain_stats)
+    live_subdomains = sum(d["live_subdomains"] for d in domain_stats)
+    http_success = sum(d["http_success"] for d in domain_stats)
+    http_failed = sum(d["http_failed"] for d in domain_stats)
 
     last_completed = (
         scans_qs.filter(status=Scan.Status.COMPLETED)
@@ -408,9 +433,14 @@ def program_detail(request, program_id):
     )
     last_scanned = last_completed.completed_at if last_completed else None
 
+    # Pagination on unique domains (not individual scans)
+    paginator = Paginator(domain_stats, 10)
+    page_number = request.GET.get("page")
+    domain_page = paginator.get_page(page_number)
+
     context = {
         "program": program,
-        "scans": scans,
+        "domain_stats": domain_page,
         "total_scans": total_scans,
         "completed_scans": completed_scans,
         "running_scans": running_scans,
