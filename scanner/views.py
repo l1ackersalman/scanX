@@ -142,15 +142,24 @@ def scan_detail(request, scan_id):
     """
     scan = get_object_or_404(Scan, id=scan_id)
 
+    # Prepare and paginate HTTP results (50 per page)
+    httpx_results_raw = scan.httpx_results or []
+    httpx_results = [
+        {**r,
+         "status_class": get_status_class(r.get("status", "")),
+         "tech": _normalize_tech(r.get("tech"))
+        }
+        for r in httpx_results_raw
+    ]
+
+    paginator = Paginator(httpx_results, 50)
+    page_number = request.GET.get("page")
+    httpx_page = paginator.get_page(page_number)
+
     context = {
         "scan": scan,
-        "httpx_results": [
-            {**r,
-             "status_class": get_status_class(r.get("status", "")),
-             "tech": _normalize_tech(r.get("tech"))
-            }
-            for r in (scan.httpx_results or [])
-        ],
+        "httpx_page": httpx_page,
+        "httpx_results": httpx_page,
         "page_title": f"Scan: {scan.domain}",
     }
     return render(request, "scan_detail.html", context)

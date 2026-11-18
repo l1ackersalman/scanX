@@ -207,6 +207,7 @@
         <div class="card-body" style="padding: 0;">
           <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">
+                <thead>
                 <tr style="border-bottom: 1px solid var(--sx-border); text-align: center;">
                   <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 30%; text-align: center;">URL</th>
                   <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 12%; text-align: center;">Status</th>
@@ -215,9 +216,9 @@
                   <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 12%; text-align: center;">IP</th>
                   <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 18%; text-align: center;">CNAME</th>
                 </tr>
-              </thead>
+                </thead>
               <tbody>
-                {% for result in httpx_results %}
+                {% for result in httpx_page %}
                 <tr style="border-bottom: 1px solid var(--sx-border);">
                   <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-primary); max-width: 200px; word-wrap: break-word; overflow-wrap: break-word;">{{ result.url }}</td>
                   <td style="padding: var(--sx-space-2) var(--sx-space-2); text-align: center;">
@@ -248,6 +249,26 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination -->
+          {% if httpx_page.has_other_pages %}
+          <div class="pagination" style="margin: 0; padding: var(--sx-space-3) var(--sx-space-4); border-top: 1px solid var(--sx-border);">
+            <div class="info" style="margin-left: var(--sx-space-3);">Page {{ httpx_page.number }} of {{ httpx_page.paginator.num_pages }}</div>
+            <div class="controls" style="margin-right: var(--sx-space-2); margin-top: calc(var(--sx-space-2) * -1);">
+              {% if httpx_page.has_previous %}
+                <a href="?page={{ httpx_page.previous_page_number }}" class="btn-ghost">‹ Prev</a>
+              {% else %}
+                <button class="btn-ghost" disabled>‹ Prev</button>
+              {% endif %}
+              {% if httpx_page.has_next %}
+                <a href="?page={{ httpx_page.next_page_number }}" class="btn-ghost">Next ›</a>
+              {% else %}
+                <button class="btn-ghost" disabled>Next ›</button>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
           {% else %}
           <div class="empty-state" style="padding: var(--sx-space-5);">
             <div class="icon">🌐</div>
