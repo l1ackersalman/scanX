@@ -348,7 +348,7 @@
                     <span class="http-badge http-badge-tech">—</span>
                     {% endif %}
                   </td>
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-primary);">{{ result.ip|default:"—" }}</td>
+                  <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-primary); text-align: center;">{{ result.ip|default:"—" }}</td>
                   <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); max-width: 120px; overflow-wrap: break-word;">
                     {% if result.cname %}
                     {{ result.cname|join:", " }}
