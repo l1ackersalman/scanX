@@ -326,7 +326,13 @@
               <tbody>
                 {% for result in httpx_page %}
                 <tr style="border-bottom: 1px solid var(--sx-border);">
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-primary); max-width: 200px; word-wrap: break-word; overflow-wrap: break-word;">{{ result.url }}</td>
+                  <td style="padding: var(--sx-space-2) var(--sx-space-2); max-width: 200px; word-wrap: break-word; overflow-wrap: break-word;">
+                    {% if result.url %}
+                    <a href="{{ result.url }}" target="_blank" rel="noopener noreferrer" style="color: var(--sx-accent); word-break: break-all;">{{ result.url }}</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                  </td>
                   <td style="padding: var(--sx-space-2) var(--sx-space-2); text-align: center;">
                     <span class="http-badge {{ result.status_class }}">{{ result.status }}</span>
                   </td>
