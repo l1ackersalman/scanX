@@ -14,7 +14,7 @@
   .detail-grid.completed-view { grid-template-columns: 1fr; gap: var(--sx-space-5); }
   .detail-grid.completed-view aside { max-width: none; width: 100%; }
   /* Wider stats grid on full width */
-  .detail-grid.completed-view .stats-grid { grid-template-columns: repeat(4, 1fr); gap: var(--sx-space-3); }
+  .detail-grid.completed-view .stats-grid { grid-template-columns: repeat(5, 1fr); gap: var(--sx-space-3); }
   /* Full-width action buttons */
   .detail-grid.completed-view .card-body > div { flex-direction: column; gap: var(--sx-space-2); }
   .detail-grid.completed-view .card-body > div > a,
@@ -91,6 +91,41 @@
   .http-badge-tech-6 { background: rgba(230, 126, 34, 0.15); color: #e67e22; border: 1px solid rgba(230, 126, 34, 0.4); }
   .http-badge-tech-7 { background: rgba(255, 214, 0, 0.15); color: #f1c40f; border: 1px solid rgba(255, 214, 0, 0.4); }
   .http-badge-tech-8 { background: rgba(118, 118, 118, 0.15); color: #7f8c8d; border: 1px solid rgba(118, 118, 118, 0.4); }
+
+  /* Scrollable container scrollbars — match scanX theme */
+  .scroll-x::-webkit-scrollbar {
+    height: 8px;
+  }
+  .scroll-x::-webkit-scrollbar-track {
+    background: var(--sx-surface-hover);
+  }
+  .scroll-x::-webkit-scrollbar-thumb {
+    background: var(--sx-accent);
+    border-radius: var(--sx-radius-pill);
+    border: 2px solid var(--sx-surface-hover);
+  }
+  .scroll-x::-webkit-scrollbar-thumb:hover {
+    background: var(--sx-accent-hover);
+  }
+
+  /* Filter HTTP Results select dropdown scrollbars — match page scrollbar */
+  form[method="get"] select::-webkit-scrollbar {
+    width: 10px;
+  }
+  form[method="get"] select::-webkit-scrollbar-track {
+    background: var(--sx-surface-hover);
+  }
+  form[method="get"] select::-webkit-scrollbar-thumb {
+    background: var(--sx-accent);
+    border-radius: var(--sx-radius-pill);
+    border: 3px solid var(--sx-surface-hover);
+  }
+  form[method="get"] select::-webkit-scrollbar-thumb:hover {
+    background: var(--sx-accent-hover);
+  }
+  form[method="get"] select {
+    scrollbar-color: var(--sx-accent) var(--sx-surface-hover);
+  }
 </style>
 {% endblock %}
 
@@ -276,7 +311,7 @@
           <h2 id="httpx-results-title" class="card-title" style="margin: 0;">HTTP Results</h2>
         </div>
         <div class="card-body" style="padding: 0;">
-          <div style="overflow-x: auto;">
+          <div class="scroll-x" style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">
                 <thead>
                 <tr style="border-bottom: 1px solid var(--sx-border); text-align: center;">
@@ -291,7 +326,13 @@
               <tbody>
                 {% for result in httpx_page %}
                 <tr style="border-bottom: 1px solid var(--sx-border);">
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-primary); max-width: 200px; word-wrap: break-word; overflow-wrap: break-word;">{{ result.url }}</td>
+                  <td style="padding: var(--sx-space-2) var(--sx-space-2); max-width: 200px; word-wrap: break-word; overflow-wrap: break-word;">
+                    {% if result.url %}
+                    <a href="{{ result.url }}" target="_blank" rel="noopener noreferrer" style="color: var(--sx-accent); word-break: break-all;">{{ result.url }}</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                  </td>
                   <td style="padding: var(--sx-space-2) var(--sx-space-2); text-align: center;">
                     <span class="http-badge {{ result.status_class }}">{{ result.status }}</span>
                   </td>
@@ -307,7 +348,7 @@
                     <span class="http-badge http-badge-tech">—</span>
                     {% endif %}
                   </td>
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-primary);">{{ result.ip|default:"—" }}</td>
+                  <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-primary); text-align: center;">{{ result.ip|default:"—" }}</td>
                   <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); max-width: 120px; overflow-wrap: break-word;">
                     {% if result.cname %}
                     {{ result.cname|join:", " }}
