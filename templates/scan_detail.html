@@ -103,9 +103,12 @@
     </p>
     {% if scan.program %}
     <p style="margin: var(--sx-space-1) 0 0; color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
-      Program: <strong>{% if scan.program.title %}{{ scan.program.title }}{% else %}{{ scan.program.name }}{% endif %}</strong>
-      <span class="badge badge-free">{{ scan.program.get_platform_display }}</span>
-      <span class="badge badge-downloadable">{{ scan.program.program_type|upper }}</span>
+      Program: <strong>{{ scan.program.name }}</strong>
+    </p>
+    <p style="margin: var(--sx-space-1) 0 0; color: var(--sx-text-secondary); font-size: var(--sx-text-xs); display: flex; gap: var(--sx-space-2); align-items: center;">
+      <span>{{ scan.program.get_platform_display }}</span>
+      <span>·</span>
+      <span>{{ scan.program.get_program_type_display }}</span>
     </p>
     {% endif %}
   </div>
