@@ -93,6 +93,7 @@ def start_scan(request):
     Validates input, creates Scan record, launches background worker.
     """
     domain = request.POST.get("domain", "").strip()
+    program_id = request.POST.get("program", "").strip()
 
     # Validation
     errors = []
@@ -103,6 +104,14 @@ def start_scan(request):
             validate_domain(domain)
         except Exception as e:
             errors.append(str(e))
+
+    if not program_id:
+        errors.append("Program selection is required.")
+    else:
+        try:
+            Program.objects.get(id=program_id)
+        except Program.DoesNotExist:
+            errors.append("Selected program does not exist.")
 
     if errors:
         for error in errors:
@@ -116,14 +125,9 @@ def start_scan(request):
         authorized_by="",
     )
 
-    # Link scan to a program if one was selected
-    program_id = request.POST.get("program", "").strip()
-    if program_id:
-        try:
-            scan.program = Program.objects.get(id=program_id)
-            scan.save(update_fields=["program"])
-        except Program.DoesNotExist:
-            pass
+    # Link scan to the selected program (now required)
+    scan.program = Program.objects.get(id=program_id)
+    scan.save(update_fields=["program"])
 
     # Launch background scan
     run_scan_in_background(scan)
