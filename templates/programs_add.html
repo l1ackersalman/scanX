@@ -16,17 +16,17 @@
     <form method="post" action="{% url 'scanner:programs_add' %}" novalidate>
       {% csrf_token %}
       <div class="form-group">
-        <label for="program_title" class="form-label">Title</label>
-        <input type="text" id="program_title" name="title" class="form-input"
-               required placeholder="e.g. EDU" autocomplete="off">
-        <small class="form-text">Short display title for the program card.</small>
-      </div>
-
-      <div class="form-group">
         <label for="program_name" class="form-label">Program Name</label>
         <input type="text" id="program_name" name="program_name" class="form-input"
                required placeholder="e.g. Snapchat" autocomplete="off">
         <small class="form-text">Authorized target domain or organization name.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="program_title" class="form-label">Title</label>
+        <input type="text" id="program_title" name="title" class="form-input"
+               required placeholder="e.g. EDU" autocomplete="off">
+        <small class="form-text">Short display title for the program card.</small>
       </div>
 
       <div class="form-group">
