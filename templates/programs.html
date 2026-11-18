@@ -24,6 +24,11 @@
       <div class="card-head">
         <div class="card-meta">
           <div class="card-publisher">{{ item.scan.name }}</div>
+          <div style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin-top: var(--sx-space-1); display: flex; gap: var(--sx-space-2); align-items: center;">
+            <span>{{ item.scan.get_platform_display }}</span>
+            <span>·</span>
+            <span>{{ item.scan.get_program_type_display }}</span>
+          </div>
         </div>
       </div>
       <div class="card-body">
