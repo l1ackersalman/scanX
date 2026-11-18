@@ -106,9 +106,14 @@
       Program: <strong>{{ scan.program.name }}</strong>
     </p>
     <p style="margin: var(--sx-space-1) 0 0; color: var(--sx-text-secondary); font-size: var(--sx-text-xs); display: flex; gap: var(--sx-space-2); align-items: center;">
-      <span>{{ scan.program.get_platform_display }}</span>
-      <span>·</span>
-      <span>{{ scan.program.get_program_type_display }}</span>
+      <span class="badge badge-info">{{ scan.program.get_platform_display }}</span>
+      {% if scan.program.program_type == "bbp" %}
+      <span class="badge badge-success">BBP</span>
+      {% elif scan.program.program_type == "vdp" %}
+      <span class="badge badge-warning">VDP</span>
+      {% else %}
+      <span class="badge badge-danger">PENTEST</span>
+      {% endif %}
     </p>
     {% endif %}
   </div>
