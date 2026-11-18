@@ -373,3 +373,55 @@ def delete_program(request, program_id):
         messages.error(request, f"Failed to delete program: {e}")
 
     return redirect("scanner:programs")
+
+
+@require_http_methods(["GET"])
+def program_detail(request, program_id):
+    """
+    Program detail page: shows all scans for a program with aggregate statistics.
+    """
+    program = get_object_or_404(Program, id=program_id)
+    scans_qs = Scan.objects.filter(program=program).order_by("-created_at")
+
+    # Pagination
+    paginator = Paginator(scans_qs, 10)
+    page_number = request.GET.get("page")
+    scans = paginator.get_page(page_number)
+
+    # Aggregate statistics across all scans for this program
+    total_scans = scans_qs.count()
+    completed_scans = scans_qs.filter(status=Scan.Status.COMPLETED).count()
+    running_scans = scans_qs.filter(status=Scan.Status.RUNNING).count()
+    failed_scans = scans_qs.filter(status=Scan.Status.FAILED).count()
+    pending_scans = scans_qs.filter(status=Scan.Status.PENDING).count()
+    cancelled_scans = scans_qs.filter(status=Scan.Status.CANCELLED).count()
+
+    total_subdomains = sum(s.total_subdomains or 0 for s in scans_qs)
+    live_subdomains = sum(s.live_subdomains or 0 for s in scans_qs)
+    http_success = sum(s.http_success or 0 for s in scans_qs)
+    http_failed = sum(s.http_failed or 0 for s in scans_qs)
+
+    last_completed = (
+        scans_qs.filter(status=Scan.Status.COMPLETED)
+        .order_by("-completed_at")
+        .first()
+    )
+    last_scanned = last_completed.completed_at if last_completed else None
+
+    context = {
+        "program": program,
+        "scans": scans,
+        "total_scans": total_scans,
+        "completed_scans": completed_scans,
+        "running_scans": running_scans,
+        "failed_scans": failed_scans,
+        "pending_scans": pending_scans,
+        "cancelled_scans": cancelled_scans,
+        "total_subdomains": total_subdomains,
+        "live_subdomains": live_subdomains,
+        "http_success": http_success,
+        "http_failed": http_failed,
+        "last_scanned": last_scanned,
+        "page_title": f"Program: {program.name}",
+    }
+    return render(request, "programs_detail.html", context)

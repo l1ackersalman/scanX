@@ -18,7 +18,9 @@
 {% if programs %}
   <div class="catalog" role="list" aria-label="Program catalog">
     {% for item in programs %}
-    <article class="card" role="listitem">
+    <article class="card" role="listitem"
+             onclick="window.location.href='{% url 'scanner:program_detail' item.scan.id %}'"
+             style="cursor: pointer;">
       <div class="card-head">
         <div class="card-meta">
           <div class="card-publisher">{{ item.scan.name }}</div>
@@ -41,10 +43,10 @@
       <div class="card-footer">
         <span class="card-stats">{{ item.scan_count }} scan{% if item.scan_count != 1 %}s{% endif %}</span>
         <div class="card-actions">
-          <a href="{% url 'scanner:programs_edit' item.scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">Edit</a>
+          <a href="{% url 'scanner:programs_edit' item.scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);" onclick="event.stopPropagation();">Edit</a>
           <form method="post" action="{% url 'scanner:programs_delete' item.scan.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this program?');">
             {% csrf_token %}
-            <button type="submit" class="btn-ghost" style="color: var(--sx-danger); border-color: var(--sx-danger); padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">Delete</button>
+            <button type="submit" class="btn-ghost" style="color: var(--sx-danger); border-color: var(--sx-danger); padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);" onclick="event.stopPropagation();">Delete</button>
           </form>
         </div>
       </div>
