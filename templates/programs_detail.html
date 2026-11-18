@@ -33,6 +33,10 @@
   <div class="card-body">
     <div class="stats-grid">
       <div class="stat-card">
+        <div class="stat-label">Total Targets</div>
+        <div class="stat-value">{{ total_targets }}</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-label">Total Scans</div>
         <div class="stat-value">{{ total_scans }}</div>
       </div>
@@ -63,6 +67,10 @@
       <div class="stat-card">
         <div class="stat-label">HTTP Failed</div>
         <div class="stat-value" style="color: var(--sx-danger);">{{ http_failed }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Technologies</div>
+        <div class="stat-value">{{ total_technologies }}</div>
       </div>
     </div>
 

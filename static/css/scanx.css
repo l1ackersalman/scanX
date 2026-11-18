@@ -55,6 +55,33 @@
 }
 
 /* =====================================================================
+   Global Scrollbar Styling - scanX theme
+   ===================================================================== */
+html::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html::-webkit-scrollbar-track {
+  background: var(--sx-surface-hover);
+}
+
+html::-webkit-scrollbar-thumb {
+  background: var(--sx-accent);
+  border-radius: var(--sx-radius-pill);
+  border: 3px solid var(--sx-surface-hover);
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: var(--sx-accent-hover);
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sx-accent) var(--sx-surface-hover);
+}
+
+/* =====================================================================
    Base & Reset
    ===================================================================== */
 
@@ -409,10 +436,17 @@ main.content {
    Stats Grid
    ===================================================================== */
 .stats-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sx-space-3);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sx-space-3);
   margin-bottom: var(--sx-space-4);
+  width: 100%;
 }
-@media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
 .stat-card {
   background: var(--sx-surface); border: 1px solid var(--sx-border);
   border-radius: var(--sx-radius-card); padding: var(--sx-space-4);
@@ -475,6 +509,52 @@ main.content {
 .scan-form .card { margin-bottom: var(--sx-space-4); }
 .scan-form .card-body { padding: var(--sx-space-5); }
 .scan-form .form-group:last-of-type { margin-bottom: 0; }
+
+/* =====================================================================
+   HTTP Results Filter Section
+   ===================================================================== */
+.filter-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sx-space-4);
+  align-items: center;
+}
+
+.filter-section .form-input {
+  font-size: var(--sx-text-xs);
+  padding: var(--sx-space-1);
+}
+
+.filter-section label {
+  font-size: var(--sx-text-xs);
+  color: var(--sx-text-secondary);
+  white-space: nowrap;
+}
+
+/* Filter select scrollbar styling - match scanX theme */
+.filter-section select {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sx-accent) var(--sx-surface-hover);
+}
+
+.filter-section select::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.filter-section select::-webkit-scrollbar-track {
+  background: var(--sx-surface-hover);
+}
+
+.filter-section select::-webkit-scrollbar-thumb {
+  background: var(--sx-accent);
+  border-radius: var(--sx-radius-pill);
+  border: 3px solid var(--sx-surface-hover);
+}
+
+.filter-section select::-webkit-scrollbar-thumb:hover {
+  background: var(--sx-accent-hover);
+}
 
 /* =====================================================================
    Dashboard Grid Layout
