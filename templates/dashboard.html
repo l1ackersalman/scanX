@@ -75,7 +75,7 @@
                 </td>
                 <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                   {% if scan.program %}
-                    <span style="color: var(--sx-text-primary); font-weight: 500;">{{ scan.program.title|default:scan.program.name }}</span>
+                    <span style="color: var(--sx-text-primary); font-weight: 500;">{{ scan.program.name }}</span>
                     <br>
                     <span style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary);">{{ scan.program.get_platform_display }}</span>
                   {% else %}
