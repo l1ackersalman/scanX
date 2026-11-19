@@ -85,11 +85,11 @@
       </div>
       <div style="display: flex; justify-content: space-between; margin-bottom: var(--sx-space-1);">
         <span>Created</span>
-        <span>{{ program.created_at|date:"M d, Y H:i" }}</span>
+        <span>{{ program.created_at|date:"M d, Y h:i A" }}</span>
       </div>
       <div style="display: flex; justify-content: space-between;">
         <span>Last Completed Scan</span>
-        <span>{{ last_scanned|date:"M d, Y H:i"|default:"—" }}</span>
+        <span>{{ last_scanned|date:"M d, Y h:i A"|default:"—" }}</span>
       </div>
     </div>
   </div>
@@ -126,11 +126,11 @@
               <td style="padding: var(--sx-space-3) var(--sx-space-4);">
                 <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
               </td>
-              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.created_at|date:"M d, Y H:i" }}</td>
-              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.started_at|date:"M d, H:i"|default:"—" }}</td>
-              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.completed_at|date:"M d, H:i"|default:"—" }}</td>
+              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.created_at|date:"M d, Y h:i A" }}</td>
+              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.started_at|date:"M d, h:i A"|default:"—" }}</td>
+              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.completed_at|date:"M d, h:i A"|default:"—" }}</td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">
-                {% if scan.duration_seconds %}{{ scan.duration_seconds }}s{% else %}—{% endif %}
+                {{ scan.duration_display }}
               </td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
                 {% if item.total_subdomains %}

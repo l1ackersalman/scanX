@@ -85,6 +85,18 @@ class Scan(models.Model):
         return None
 
     @property
+    def duration_display(self) -> str:
+        """Get human-readable duration (s/m/h)."""
+        seconds = self.duration_seconds
+        if not seconds:
+            return "—"
+        if seconds >= 3600:
+            return f"{seconds // 3600}h"
+        if seconds >= 60:
+            return f"{seconds // 60}m"
+        return f"{seconds}s"
+
+    @property
     def output_path(self):
         """Get absolute path to scan output directory."""
         from django.conf import settings

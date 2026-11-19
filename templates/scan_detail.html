@@ -227,15 +227,15 @@
         <div style="margin-top: var(--sx-space-4); padding-top: var(--sx-space-4); border-top: 1px solid var(--sx-border); font-size: var(--sx-text-sm); color: var(--sx-text-secondary);">
           <div style="display: flex; justify-content: space-between; margin-bottom: var(--sx-space-1);">
             <span>Started</span>
-            <span>{{ scan.started_at|date:"M d, Y H:i"|default:"—" }}</span>
+            <span>{{ scan.started_at|date:"M d, Y h:i A"|default:"—" }}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: var(--sx-space-1);">
             <span>Completed</span>
-            <span>{{ scan.completed_at|date:"M d, Y H:i"|default:"—" }}</span>
+            <span>{{ scan.completed_at|date:"M d, Y h:i A"|default:"—" }}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span>Duration</span>
-            <span>{{ scan.duration_seconds|default:"—" }}s</span>
+            <span>{{ scan.duration_display }}</span>
           </div>
         </div>
       </div>

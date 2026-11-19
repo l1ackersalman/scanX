@@ -56,11 +56,11 @@
                   —
                 {% endif %}
               </td>
-              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.created_at|date:"M d, Y H:i" }}</td>
-              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.started_at|date:"M d, H:i"|default:"—" }}</td>
-              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.completed_at|date:"M d, H:i"|default:"—" }}</td>
+              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.created_at|date:"M d, Y h:i A" }}</td>
+              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.started_at|date:"M d, h:i A"|default:"—" }}</td>
+              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.completed_at|date:"M d, h:i A"|default:"—" }}</td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">
-                {% if scan.duration_seconds %}{{ scan.duration_seconds }}s{% else %}—{% endif %}
+                {{ scan.duration_display }}
               </td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
                 {% if scan.total_subdomains %}
