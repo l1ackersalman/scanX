@@ -250,12 +250,12 @@
           <h2 id="filter-title" class="card-title" style="margin: 0;">Filter HTTP Results</h2>
         </div>
         <div class="card-body" style="padding: var(--sx-space-3) var(--sx-space-4);">
-          <form method="get" style="display: flex; flex-wrap: wrap; gap: var(--sx-space-3); align-items: center; margin: 0;">
+          <form method="get" class="filter-section filter-form" margin: 0;">
             <input type="hidden" name="page" value="1">
 
-            <div style="display: flex; flex-direction: column; gap: var(--sx-space-1); min-width: 140px;">
-              <label style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; white-space: nowrap;">Status Code</label>
-              <select name="status" class="form-input" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1); width: 100%;" onchange="this.form.submit()">
+            <div class="filter-group">
+              <label class="filter-label">Status Code</label>
+              <select name="status" class="form-input filter-select" onchange="this.form.submit()">
                 <option value="">All</option>
                 {% for s in all_statuses %}
                 <option value="{{ s }}" {% if current_status == s %}selected{% endif %}>{{ s }}</option>
@@ -263,9 +263,9 @@
               </select>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: var(--sx-space-1); min-width: 160px;">
-              <label style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; white-space: nowrap;">Technology</label>
-              <select name="tech" class="form-input" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1); width: 100%;" onchange="this.form.submit()">
+            <div class="filter-group">
+              <label class="filter-label">Technology</label>
+              <select name="tech" class="form-input filter-select" onchange="this.form.submit()">
                 <option value="">All</option>
                 {% for tech in all_technologies %}
                 <option value="{{ tech }}" {% if current_tech == tech %}selected{% endif %}>{{ tech }}</option>
@@ -273,9 +273,9 @@
               </select>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: var(--sx-space-1); min-width: 140px;">
-              <label style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; white-space: nowrap;">IP Address</label>
-              <select name="ip" class="form-input" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1); width: 100%;" onchange="this.form.submit()">
+            <div class="filter-group">
+              <label class="filter-label">IP Address</label>
+              <select name="ip" class="form-input filter-select" onchange="this.form.submit()">
                 <option value="">All</option>
                 {% for ip in all_ips %}
                 <option value="{{ ip }}" {% if current_ip == ip %}selected{% endif %}>{{ ip }}</option>
@@ -283,9 +283,9 @@
               </select>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: var(--sx-space-1); min-width: 160px;">
-              <label style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; white-space: nowrap;">CNAME</label>
-              <select name="cname" class="form-input" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1); width: 100%;" onchange="this.form.submit()">
+            <div class="filter-group">
+              <label class="filter-label">CNAME</label>
+              <select name="cname" class="form-input filter-select" onchange="this.form.submit()">
                 <option value="">All</option>
                 {% for cname in all_cnames %}
                 <option value="{{ cname }}" {% if current_cname == cname %}selected{% endif %}>{{ cname }}</option>
@@ -294,7 +294,7 @@
             </div>
 
             {% if current_status or current_tech or current_ip or current_cname %}
-            <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1) var(--sx-space-3); margin-left: var(--sx-space-2); margin-top: calc(var(--sx-space-3) - var(--sx-space-1));">Clear Filters</a>
+            <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost btn-sm">Clear Filters</a>
             {% endif %}
           </form>
         </div>
@@ -311,33 +311,33 @@
           <h2 id="httpx-results-title" class="card-title" style="margin: 0;">HTTP Results</h2>
         </div>
         <div class="card-body" style="padding: 0;">
-          <div class="scroll-x" style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">
+          <div class="table-wrap">
+            <table class="table">
                 <thead>
-                <tr style="border-bottom: 1px solid var(--sx-border); text-align: center;">
-                  <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 30%; text-align: center;">URL</th>
-                  <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 12%; text-align: center;">Status</th>
-                  <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 20%; text-align: center;">Title</th>
-                  <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 18%; text-align: center;">Technology</th>
-                  <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 12%; text-align: center;">IP</th>
-                  <th style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase; width: 18%; text-align: center;">CNAME</th>
+                <tr>
+                  <th class="table-cell-center" style="width: 30%;">URL</th>
+                  <th class="table-cell-center" style="width: 12%;">Status</th>
+                  <th class="table-cell-center" style="width: 20%;">Title</th>
+                  <th class="table-cell-center" style="width: 18%;">Technology</th>
+                  <th class="table-cell-center" style="width: 12%;">IP</th>
+                  <th class="table-cell-center" style="width: 18%;">CNAME</th>
                 </tr>
                 </thead>
               <tbody>
                 {% for result in httpx_page %}
-                <tr style="border-bottom: 1px solid var(--sx-border);">
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); max-width: 200px; word-wrap: break-word; overflow-wrap: break-word;">
+                <tr class="table-row">
+                  <td class="table-cell-mono">
                     {% if result.url %}
-                    <a href="{{ result.url }}" target="_blank" rel="noopener noreferrer" style="color: var(--sx-accent); word-break: break-all;">{{ result.url }}</a>
+                    <a href="{{ result.url }}" target="_blank" rel="noopener noreferrer" class="link-primary">{{ result.url }}</a>
                     {% else %}
                     —
                     {% endif %}
                   </td>
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); text-align: center;">
+                  <td class="table-cell-center">
                     <span class="http-badge {{ result.status_class }}">{{ result.status }}</span>
                   </td>
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); font-weight: 600; color: var(--sx-text-primary); max-width: 150px; overflow-wrap: break-word;">{{ result.title|default:"—" }}</td>
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); text-align: center;">
+                  <td class="table-cell-primary" style="max-width: 150px; overflow-wrap: break-word;">{{ result.title|default:"—" }}</td>
+                  <td class="table-cell-center table-cell-tech">
                     {% if result.tech %}
                     {% for tech in result.tech %}
                     <span class="http-badge http-badge-tech-{{ forloop.counter0 }}">{{ tech }}</span>
@@ -348,8 +348,8 @@
                     <span class="http-badge http-badge-tech">—</span>
                     {% endif %}
                   </td>
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-primary); text-align: center;">{{ result.ip|default:"—" }}</td>
-                  <td style="padding: var(--sx-space-2) var(--sx-space-2); color: var(--sx-text-secondary); max-width: 120px; overflow-wrap: break-word;">
+                  <td class="table-cell-center table-cell-primary">{{ result.ip|default:"—" }}</td>
+                  <td class="table-cell-secondary" style="max-width: 120px; overflow-wrap: break-word;">
                     {% if result.cname %}
                     {{ result.cname|join:", " }}
                     {% else %}
@@ -364,18 +364,18 @@
 
           <!-- Pagination -->
           {% if httpx_page.has_other_pages %}
-          <div class="pagination" style="margin: 0; padding: var(--sx-space-3) var(--sx-space-4); border-top: 1px solid var(--sx-border);">
-            <div class="info" style="margin-left: var(--sx-space-3);">Page {{ httpx_page.number }} of {{ httpx_page.paginator.num_pages }}</div>
-            <div class="controls" style="margin-right: var(--sx-space-2); margin-top: calc(var(--sx-space-2) * -1);">
+          <div class="pagination pagination-sm">
+            <div class="info">Page {{ httpx_page.number }} of {{ httpx_page.paginator.num_pages }}</div>
+            <div class="controls">
               {% if httpx_page.has_previous %}
-                <a href="?page={{ httpx_page.previous_page_number }}" class="btn-ghost">‹ Prev</a>
+                <a href="?page={{ httpx_page.previous_page_number }}" class="btn-ghost btn-sm">‹ Prev</a>
               {% else %}
-                <button class="btn-ghost" disabled>‹ Prev</button>
+                <button class="btn-ghost btn-sm" disabled>‹ Prev</button>
               {% endif %}
               {% if httpx_page.has_next %}
-                <a href="?page={{ httpx_page.next_page_number }}" class="btn-ghost">Next ›</a>
+                <a href="?page={{ httpx_page.next_page_number }}" class="btn-ghost btn-sm">Next ›</a>
               {% else %}
-                <button class="btn-ghost" disabled>Next ›</button>
+                <button class="btn-ghost btn-sm" disabled>Next ›</button>
               {% endif %}
             </div>
           </div>

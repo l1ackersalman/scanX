@@ -424,6 +424,12 @@ main.content {
 }
 .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
 
+.pagination-sm {
+  margin: 0;
+  padding: var(--sx-space-3) var(--sx-space-4);
+  border-top: 1px solid var(--sx-border);
+}
+
 /* =====================================================================
    Toolbar
    ===================================================================== */
@@ -556,6 +562,113 @@ main.content {
   background: var(--sx-accent-hover);
 }
 
+.asset-search select::-webkit-scrollbar-thumb:hover {
+  background: var(--sx-accent-hover);
+}
+
+/* =====================================================================
+   Filter form groups (scan detail)
+   ===================================================================== */
+.filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sx-space-3);
+  align-items: center;
+  margin: 0;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sx-space-1);
+  min-width: 140px;
+}
+.filter-label {
+  font-size: var(--sx-text-xs);
+  color: var(--sx-text-secondary);
+  margin: 0;
+  white-space: nowrap;
+}
+.filter-select {
+  font-size: var(--sx-text-xs);
+  padding: var(--sx-space-1);
+  width: 100%;
+}
+
+/* =====================================================================
+   Table wrap (overflow container)
+   ===================================================================== */
+.table-wrap {
+  overflow-x: auto;
+}
+
+/* =====================================================================
+   Table row hover
+   ===================================================================== */
+.table-row {
+  transition: background var(--sx-transition);
+}
+.table-row:hover {
+  background: var(--sx-surface-hover);
+}
+
+/* =====================================================================
+   Table cell variants
+   ===================================================================== */
+.table-cell-mono {
+  font-family: var(--sx-font-mono);
+}
+.table-cell-secondary {
+  color: var(--sx-text-secondary);
+}
+.table-cell-center {
+  text-align: center;
+}
+.table th.table-cell-center {
+  text-align: center;
+}
+
+/* Technology cell — allow all badges to show, wrap if needed */
+.table td.table-cell-tech {
+  white-space: normal;
+  text-overflow: clip;
+  overflow: visible;
+  overflow-wrap: break-word;
+}
+
+/* =====================================================================
+   Link primary (accent colored links)
+   ===================================================================== */
+.link-primary {
+  color: var(--sx-accent);
+  font-weight: 500;
+}
+.link-primary:hover {
+  text-decoration: underline;
+}
+
+/* =====================================================================
+   Text secondary
+   ===================================================================== */
+.text-secondary {
+  color: var(--sx-text-secondary);
+}
+
+.text-danger {
+  color: var(--sx-danger);
+}
+
+.empty-state-lg {
+  padding: var(--sx-space-8);
+}
+
+/* =====================================================================
+   Small button
+   ===================================================================== */
+.btn-sm {
+  padding: var(--sx-space-1) var(--sx-space-3);
+  font-size: var(--sx-text-xs);
+}
+
 /* =====================================================================
    Dashboard Grid Layout
    ===================================================================== */
@@ -568,4 +681,71 @@ main.content {
   .dashboard-grid {
     grid-template-columns: 480px 1fr;
   }
+}
+
+/* =====================================================================
+   Table components (replaces inline styles)
+   ===================================================================== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.table th,
+.table td {
+  padding: var(--sx-space-3) var(--sx-space-4);
+  border-bottom: 1px solid var(--sx-border);
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.table th {
+  color: var(--sx-text-secondary);
+  font-weight: 600;
+  font-size: var(--sx-text-xs);
+  text-transform: uppercase;
+  text-align: left;
+}
+.table td {
+  color: var(--sx-text-secondary);
+  font-size: var(--sx-text-sm);
+}
+.table td.primary {
+  color: var(--sx-text-primary);
+  font-weight: 500;
+}
+.table td.mono {
+  font-family: var(--sx-font-mono);
+}
+.table td.center {
+  text-align: center;
+}
+.table tr:hover {
+  background: var(--sx-surface-hover);
+}
+
+/* =====================================================================
+   Asset page specific
+   ===================================================================== */
+.asset-search {
+  display: flex;
+  align-items: center;
+  gap: var(--sx-space-2);
+  margin: 0;
+}
+.asset-search .form-input {
+  font-size: var(--sx-text-xs);
+  padding: var(--sx-space-1) var(--sx-space-2);
+}
+.asset-search label {
+  font-size: var(--sx-text-xs);
+  color: var(--sx-text-secondary);
+  margin: 0;
+  white-space: nowrap;
+}
+.asset-search select {
+  font-size: var(--sx-text-xs);
+  padding: var(--sx-space-1) var(--sx-space-2);
+  width: auto;
 }

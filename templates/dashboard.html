@@ -13,7 +13,7 @@
   <!-- Scan Form Card -->
   <section class="card scan-form" aria-labelledby="scan-form-title">
     <div class="card-head" style="display: flex; align-items: center; justify-content: space-between;">
-      <h2 id="scan-form-title" class="card-title" style="margin: 0; color: var(--sx-accent);">New Scan</h2>
+      <h2 id="scan-form-title" class="card-title">New Scan</h2>
       <button type="submit" form="new-scan-form" class="btn-primary">
         Start Scan
       </button>
@@ -31,7 +31,7 @@
         </div>
 
         <div class="form-group">
-          <label for="id_program" class="form-label">Program <span style="color: var(--sx-danger);">*</span></label>
+          <label for="id_program" class="form-label">Program <span class="text-danger">*</span></label>
           <select id="id_program" name="program" class="form-input" required>
             <option value="">Select a program</option>
             {% for program in programs %}
@@ -51,37 +51,37 @@
     </div>
     <div class="card-body" style="padding: 0;">
       {% if scans %}
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: var(--sx-text-sm);">
+        <div class="table-wrap">
+          <table class="table">
             <thead>
-              <tr style="border-bottom: 1px solid var(--sx-border); text-align: left;">
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Domain</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Status</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Program</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Platform</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Started</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Duration</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Results</th>
-                <th style="padding: var(--sx-space-3) var(--sx-space-4);"></th>
+              <tr>
+                <th>Domain</th>
+                <th>Status</th>
+                <th>Program</th>
+                <th>Platform</th>
+                <th>Started</th>
+                <th>Duration</th>
+                <th>Results</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {% for scan in scans %}
-              <tr style="border-bottom: 1px solid var(--sx-border); transition: background var(--sx-transition);" onmouseover="this.style.background='var(--sx-surface-hover)'" onmouseout="this.style.background='transparent'">
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); font-family: var(--sx-font-mono); font-size: var(--sx-text-sm); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                  <a href="{% url 'scanner:scan_detail' scan.id %}" style="color: var(--sx-accent); font-weight: 600;">{{ scan.domain }}</a>
+              <tr class="table-row">
+                <td class="table-cell-mono">
+                  <a href="{% url 'scanner:scan_detail' scan.id %}" class="link-primary">{{ scan.domain }}</a>
                 </td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4);">
+                <td>
                   <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
                 </td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;">
+                <td class="table-cell-secondary">
                   {% if scan.program %}
-                    <a href="{% url 'scanner:program_detail' scan.program.id %}" style="color: var(--sx-accent); font-weight: 500;">{{ scan.program.name }}</a>
+                    <a href="{% url 'scanner:program_detail' scan.program.id %}" class="link-primary">{{ scan.program.name }}</a>
                   {% else %}
-                    <span style="color: var(--sx-text-secondary);">—</span>
+                    <span class="text-secondary">—</span>
                   {% endif %}
                 </td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); text-align: left; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;">
+                <td class="table-cell-secondary">
                   {% if scan.program %}
                     {{ scan.program.get_platform_display }} · 
                     {% if scan.program.program_type == "bbp" %}BBP
@@ -91,20 +91,20 @@
                     —
                   {% endif %}
                 </td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
+                <td class="table-cell-secondary">
                   {% if scan.started_at %}{{ scan.started_at|date:"M d, h:i A" }}{% else %}—{% endif %}
                 </td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">
+                <td class="table-cell-mono">
                   {{ scan.duration_display }}
                 </td>
-                <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
+                <td class="table-cell-secondary">
                   {% if scan.total_subdomains %}
                     {{ scan.total_subdomains }} subdomains · {{ scan.live_subdomains }} live · {{ scan.http_success }} OK
                   {% else %}—{% endif %}
                 </td>
-                  <td style="padding: var(--sx-space-3) var(--sx-space-4); text-align: right;">
+                <td class="table-cell-center">
                   {% if scan.status != "cancelled" %}
-                  <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-xs);">View</a>
+                  <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost btn-sm">View</a>
                   {% endif %}
                 </td>
               </tr>
@@ -115,24 +115,24 @@
 
         <!-- Pagination -->
         {% if scans.has_other_pages %}
-        <div class="pagination" style="margin: 0; padding: var(--sx-space-3) var(--sx-space-4); border-top: 1px solid var(--sx-border);">
+        <div class="pagination pagination-sm">
           <div class="info">Page {{ scans.number }} of {{ scans.paginator.num_pages }}</div>
           <div class="controls">
             {% if scans.has_previous %}
-              <a href="?page={{ scans.previous_page_number }}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-sm);">‹ Prev</a>
+              <a href="?page={{ scans.previous_page_number }}" class="btn-ghost btn-sm">‹ Prev</a>
             {% else %}
-              <button class="btn-ghost" disabled style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-sm);">‹ Prev</button>
+              <button class="btn-ghost btn-sm" disabled>‹ Prev</button>
             {% endif %}
             {% if scans.has_next %}
-              <a href="?page={{ scans.next_page_number }}" class="btn-ghost" style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-sm);">Next ›</a>
+              <a href="?page={{ scans.next_page_number }}" class="btn-ghost btn-sm">Next ›</a>
             {% else %}
-              <button class="btn-ghost" disabled style="padding: var(--sx-space-1) var(--sx-space-3); font-size: var(--sx-text-sm);">Next ›</button>
+              <button class="btn-ghost btn-sm" disabled>Next ›</button>
             {% endif %}
           </div>
         </div>
         {% endif %}
       {% else %}
-        <div class="empty-state" style="padding: var(--sx-space-8);">
+        <div class="empty-state empty-state-lg">
           <div class="icon">🔍</div>
           <h2>No scans yet</h2>
           <p>Start your first reconnaissance scan using the form on the left.</p>

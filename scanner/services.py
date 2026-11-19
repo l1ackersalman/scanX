@@ -11,11 +11,13 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
+from collections import defaultdict
 
 from django.conf import settings
 from django.utils import timezone
+from django.core.paginator import Paginator
 
-from .models import Scan
+from .models import Scan, Program
 
 logger = logging.getLogger(__name__)
 
@@ -341,3 +343,235 @@ def get_scan_artifacts(scan: Scan) -> dict[str, Path]:
         artifacts["report.txt"] = parent_report
 
     return artifacts
+
+
+# ---------------------------------------------------------------------------
+# Aggregation helpers (moved out of views to keep views thin)
+# ---------------------------------------------------------------------------
+
+def _extract_tech_from_entry(entry: dict) -> list[str]:
+    """Extract technology strings from a single httpx result entry."""
+    tech_raw = (
+        entry.get("tech-detect")
+        or entry.get("tech")
+        or entry.get("technologies")
+        or entry.get("tech_detect")
+        or entry.get("technology")
+        or entry.get("webserver")
+        or entry.get("server")
+        or entry.get("http-server")
+    )
+    if not tech_raw:
+        return []
+    if isinstance(tech_raw, list):
+        return [str(t).strip() for t in tech_raw if str(t).strip()]
+    if isinstance(tech_raw, dict):
+        return [str(k).strip() for k in tech_raw if str(k).strip()]
+    if isinstance(tech_raw, str) and tech_raw.strip():
+        return [t.strip() for t in tech_raw.split(",") if t.strip()]
+    return []
+
+
+def get_program_statistics(program: Program) -> dict:
+    """
+    Return aggregate statistics for a single Program.
+
+    Includes scan counts by status, per-domain deduplicated metrics,
+    and a sorted list of domain stats for the program detail page.
+    """
+    scans_qs = Scan.objects.filter(program=program).order_by("-created_at")
+
+    # Scan-operation counts
+    total_scans = scans_qs.count()
+    total_targets = scans_qs.values("domain").distinct().count()
+    completed_scans = scans_qs.filter(status=Scan.Status.COMPLETED).count()
+    running_scans = scans_qs.filter(status=Scan.Status.RUNNING).count()
+    failed_scans = scans_qs.filter(status=Scan.Status.FAILED).count()
+    pending_scans = scans_qs.filter(status=Scan.Status.PENDING).count()
+    cancelled_scans = scans_qs.filter(status=Scan.Status.CANCELLED).count()
+
+    # Group scans by domain; take MAX of each metric per domain
+    domain_scans: dict[str, list[Scan]] = defaultdict(list)
+    for scan in scans_qs:
+        domain_scans[scan.domain].append(scan)
+
+    domain_stats = []
+    all_technologies: set[str] = set()
+    for domain, scans in domain_scans.items():
+        latest_scan = max(scans, key=lambda s: s.created_at)
+        domain_stats.append(
+            {
+                "domain": domain,
+                "latest_scan": latest_scan,
+                "total_subdomains": max((s.total_subdomains or 0 for s in scans), default=0),
+                "live_subdomains": max((s.live_subdomains or 0 for s in scans), default=0),
+                "http_success": max((s.http_success or 0 for s in scans), default=0),
+                "http_failed": max((s.http_failed or 0 for s in scans), default=0),
+            }
+        )
+
+        for scan in scans:
+            for r in scan.httpx_results or []:
+                for tech in _extract_tech_from_entry(r):
+                    all_technologies.add(tech)
+
+    domain_stats.sort(key=lambda d: d["latest_scan"].created_at, reverse=True)
+
+    total_subdomains = sum(d["total_subdomains"] for d in domain_stats)
+    live_subdomains = sum(d["live_subdomains"] for d in domain_stats)
+    http_success = sum(d["http_success"] for d in domain_stats)
+    http_failed = sum(d["http_failed"] for d in domain_stats)
+
+    last_completed = (
+        scans_qs.filter(status=Scan.Status.COMPLETED)
+        .order_by("-completed_at")
+        .first()
+    )
+    last_scanned = last_completed.completed_at if last_completed else None
+
+    return {
+        "program": program,
+        "domain_stats": domain_stats,
+        "total_scans": total_scans,
+        "total_targets": total_targets,
+        "completed_scans": completed_scans,
+        "running_scans": running_scans,
+        "failed_scans": failed_scans,
+        "pending_scans": pending_scans,
+        "cancelled_scans": cancelled_scans,
+        "total_subdomains": total_subdomains,
+        "live_subdomains": live_subdomains,
+        "http_success": http_success,
+        "http_failed": http_failed,
+        "total_technologies": len(all_technologies),
+        "last_scanned": last_scanned,
+    }
+
+
+def get_assets_overview() -> dict:
+    """
+    Return aggregate statistics across all programs and scans
+    for the Assets overview page.
+    """
+    total_programs = Program.objects.count()
+    bbp_programs = Program.objects.filter(program_type=Program.ProgramType.BBP).count()
+    vdp_programs = Program.objects.filter(program_type=Program.ProgramType.VDP).count()
+    pentest_programs = Program.objects.filter(program_type=Program.ProgramType.PENTEST).count()
+
+    platform_stats: dict[str, int] = defaultdict(int)
+    for program in Program.objects.all():
+        platform_stats[program.get_platform_display()] += 1
+
+    total_scans = Scan.objects.count()
+    completed_scans = Scan.objects.filter(status=Scan.Status.COMPLETED).count()
+    running_scans = Scan.objects.filter(status=Scan.Status.RUNNING).count()
+    failed_scans = Scan.objects.filter(status=Scan.Status.FAILED).count()
+    pending_scans = Scan.objects.filter(status=Scan.Status.PENDING).count()
+    cancelled_scans = Scan.objects.filter(status=Scan.Status.CANCELLED).count()
+
+    total_targets = Scan.objects.values("domain").distinct().count()
+
+    total_subdomains = sum(s.total_subdomains or 0 for s in Scan.objects.all())
+    live_subdomains = sum(s.live_subdomains or 0 for s in Scan.objects.all())
+    http_success = sum(s.http_success or 0 for s in Scan.objects.all())
+    http_failed = sum(s.http_failed or 0 for s in Scan.objects.all())
+
+    return {
+        "total_programs": total_programs,
+        "bbp_programs": bbp_programs,
+        "vdp_programs": vdp_programs,
+        "pentest_programs": pentest_programs,
+        "platform_stats": dict(platform_stats),
+        "total_scans": total_scans,
+        "completed_scans": completed_scans,
+        "running_scans": running_scans,
+        "failed_scans": failed_scans,
+        "pending_scans": pending_scans,
+        "cancelled_scans": cancelled_scans,
+        "total_targets": total_targets,
+        "total_subdomains": total_subdomains,
+        "live_subdomains": live_subdomains,
+        "http_success": http_success,
+        "http_failed": http_failed,
+    }
+
+
+def get_technology_breakdown(
+    sort_by: str = "alpha",
+    search: str = "",
+    page_number: int | None = None,
+    per_page: int = 50,
+) -> dict:
+    """
+    Return paginated technology breakdown across all scans.
+
+    Each item is (technology_name, subdomain_count, target_count).
+    Results are sorted alphabetically by default, or by subdomain count
+    descending when sort_by == "count". Optional case-insensitive search
+    filters by technology name.
+    """
+    tech_subdomains: dict[str, set[str]] = defaultdict(set)
+    tech_targets: dict[str, set[str]] = defaultdict(set)
+
+    for scan in Scan.objects.all():
+        domain = scan.domain
+        for r in scan.httpx_results or []:
+            subdomain = r.get("url") or domain
+            for tech in _extract_tech_from_entry(r):
+                tech_subdomains[tech].add(subdomain)
+                tech_targets[tech].add(domain)
+
+    # Build sorted list
+    if sort_by == "count":
+        tech_list = sorted(
+            [(tech, len(subs), len(tech_targets[tech])) for tech, subs in tech_subdomains.items()],
+            key=lambda x: x[1],
+            reverse=True,
+        )
+    else:
+        tech_list = sorted(
+            [(tech, len(subs), len(tech_targets[tech])) for tech, subs in tech_subdomains.items()],
+            key=lambda x: x[0].lower(),
+        )
+
+    # Apply search filter
+    if search:
+        search_lower = search.lower()
+        tech_list = [
+            (tech, subs, targets)
+            for tech, subs, targets in tech_list
+            if search_lower in tech.lower()
+        ]
+
+    # Paginate
+    paginator = Paginator(tech_list, per_page)
+    page = paginator.get_page(page_number)
+
+    return {
+        "tech_page": page,
+        "total_technologies": len(tech_list),
+        "sort_by": sort_by,
+        "search": search,
+    }
+
+
+def get_programs_with_stats() -> list[dict]:
+    """
+    Return all programs with aggregate statistics for the programs listing page.
+    """
+    programs_list = Program.objects.all().order_by("-created_at")
+    results = []
+    for program in programs_list:
+        stats = get_program_statistics(program)
+        results.append(
+            {
+                "scan": program,
+                "total_subdomains": stats["total_subdomains"],
+                "live_subdomains": stats["live_subdomains"],
+                "http_success": stats["http_success"],
+                "scan_count": stats["total_scans"],
+                "completed_scans": stats["completed_scans"],
+                "last_scanned": stats["last_scanned"],
+            }
+        )
+    return results
