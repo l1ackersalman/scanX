@@ -539,3 +539,130 @@ def program_detail(request, program_id):
         "page_title": f"Program: {program.name}",
     }
     return render(request, "programs_detail.html", context)
+
+
+def assets(request):
+    """
+    Assets page — aggregate statistics across all programs and scans.
+    """
+    from collections import defaultdict
+
+    # Program counts
+    total_programs = Program.objects.count()
+    bbp_programs = Program.objects.filter(program_type=Program.ProgramType.BBP).count()
+    vdp_programs = Program.objects.filter(program_type=Program.ProgramType.VDP).count()
+    pentest_programs = Program.objects.filter(program_type=Program.ProgramType.PENTEST).count()
+
+    # Platform breakdown
+    platform_stats = defaultdict(int)
+    for program in Program.objects.all():
+        platform_stats[program.get_platform_display()] += 1
+
+    # Scan counts
+    total_scans = Scan.objects.count()
+    completed_scans = Scan.objects.filter(status=Scan.Status.COMPLETED).count()
+    running_scans = Scan.objects.filter(status=Scan.Status.RUNNING).count()
+    failed_scans = Scan.objects.filter(status=Scan.Status.FAILED).count()
+    pending_scans = Scan.objects.filter(status=Scan.Status.PENDING).count()
+    cancelled_scans = Scan.objects.filter(status=Scan.Status.CANCELLED).count()
+
+    # Targets (distinct domains)
+    total_targets = Scan.objects.values("domain").distinct().count()
+
+    # Aggregate scan metrics
+    total_subdomains = sum(s.total_subdomains or 0 for s in Scan.objects.all())
+    live_subdomains = sum(s.live_subdomains or 0 for s in Scan.objects.all())
+    http_success = sum(s.http_success or 0 for s in Scan.objects.all())
+    http_failed = sum(s.http_failed or 0 for s in Scan.objects.all())
+
+    # Technology breakdown: count distinct subdomains and targets per technology
+    tech_subdomains = defaultdict(set)
+    tech_targets = defaultdict(set)
+    for scan in Scan.objects.all():
+        httpx_results = scan.httpx_results or []
+        domain = scan.domain
+        for r in httpx_results:
+            tech_raw = (
+                r.get("tech-detect")
+                or r.get("tech")
+                or r.get("technologies")
+                or r.get("tech_detect")
+                or r.get("technology")
+                or r.get("webserver")
+                or r.get("server")
+                or r.get("http-server")
+            )
+            subdomain = r.get("url") or domain
+            if tech_raw:
+                if isinstance(tech_raw, list):
+                    for t in tech_raw:
+                        t = str(t).strip()
+                        if t:
+                            tech_subdomains[t].add(subdomain)
+                            tech_targets[t].add(domain)
+                elif isinstance(tech_raw, dict):
+                    for k in tech_raw:
+                        k = str(k).strip()
+                        if k:
+                            tech_subdomains[k].add(subdomain)
+                            tech_targets[k].add(domain)
+                elif isinstance(tech_raw, str) and tech_raw.strip():
+                    for t in tech_raw.split(","):
+                        t = t.strip()
+                        if t:
+                            tech_subdomains[t].add(subdomain)
+                            tech_targets[t].add(domain)
+
+    # Sort technologies
+    sort_by = request.GET.get("sort_by", "alpha")
+    if sort_by == "count":
+        tech_sorted = sorted(
+            [(tech, len(subs), len(tech_targets[tech])) for tech, subs in tech_subdomains.items()],
+            key=lambda x: x[1],
+            reverse=True,
+        )
+    else:
+        # Default: alphabetical by name
+        tech_sorted = sorted(
+            [(tech, len(subs), len(tech_targets[tech])) for tech, subs in tech_subdomains.items()],
+            key=lambda x: x[0].lower(),
+        )
+
+    # Search filter
+    tech_search = request.GET.get("tech_search", "").strip()
+    if tech_search:
+        tech_sorted = [
+            (tech, subs, targets)
+            for tech, subs, targets in tech_sorted
+            if tech_search.lower() in tech.lower()
+        ]
+
+    # Pagination: 50 technologies per page
+    paginator = Paginator(tech_sorted, 50)
+    page_number = request.GET.get("page")
+    tech_page = paginator.get_page(page_number)
+
+    context = {
+        "total_programs": total_programs,
+        "bbp_programs": bbp_programs,
+        "vdp_programs": vdp_programs,
+        "pentest_programs": pentest_programs,
+        "platform_stats": dict(platform_stats),
+        "total_scans": total_scans,
+        "completed_scans": completed_scans,
+        "running_scans": running_scans,
+        "failed_scans": failed_scans,
+        "pending_scans": pending_scans,
+        "cancelled_scans": cancelled_scans,
+        "total_targets": total_targets,
+        "total_subdomains": total_subdomains,
+        "live_subdomains": live_subdomains,
+        "http_success": http_success,
+        "http_failed": http_failed,
+        "total_technologies": len(tech_sorted),
+        "tech_page": tech_page,
+        "tech_search": tech_search,
+        "sort_by": sort_by,
+        "page_title": "Assets",
+    }
+    return render(request, "assets.html", context)

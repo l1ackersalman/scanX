@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Assets — scanX{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <h1>Assets</h1>
+  <p>Aggregate reconnaissance statistics across all authorized programs and scans.</p>
+</div>
+
+<!-- Top Stats Grid -->
+<section class="card" aria-labelledby="assets-stats-title" style="margin-bottom: var(--sx-space-5);">
+  <div class="card-head">
+    <h2 id="assets-stats-title" class="card-title" style="margin: 0;">Overview Statistics</h2>
+  </div>
+  <div class="card-body">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Programs</div>
+        <div class="stat-value">{{ total_programs }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Targets</div>
+        <div class="stat-value">{{ total_targets }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Platforms</div>
+        <div class="stat-value">{{ platform_stats|length }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Technologies</div>
+        <div class="stat-value">{{ total_technologies }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Scans</div>
+        <div class="stat-value">{{ total_scans }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Subdomains</div>
+        <div class="stat-value">{{ total_subdomains }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Live Domains</div>
+        <div class="stat-value" style="color: var(--sx-success);">{{ live_subdomains }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">HTTPS Success</div>
+        <div class="stat-value" style="color: var(--sx-success);">{{ http_success }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">HTTP Failed</div>
+        <div class="stat-value" style="color: var(--sx-danger);">{{ http_failed }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Program Type Breakdown -->
+<section class="card" aria-labelledby="program-type-title" style="margin-bottom: var(--sx-space-5);">
+  <div class="card-head">
+    <h2 id="program-type-title" class="card-title" style="margin: 0;">Program Type Breakdown</h2>
+  </div>
+  <div class="card-body">
+    <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="stat-card">
+        <div class="stat-label">BBP</div>
+        <div class="stat-value" style="color: var(--sx-success);">{{ bbp_programs }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">VDP</div>
+        <div class="stat-value" style="color: var(--sx-warning);">{{ vdp_programs }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">PENTEST</div>
+        <div class="stat-value" style="color: var(--sx-danger);">{{ pentest_programs }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Technologies Breakdown -->
+<section class="card" aria-labelledby="technologies-title">
+  <div class="card-head" style="display: flex; align-items: center; justify-content: space-between;">
+    <h2 id="technologies-title" class="card-title" style="margin: 0;">Technologies Breakdown</h2>
+    <form method="get" style="margin: 0; display: flex; align-items: center; gap: var(--sx-space-2);">
+      <input type="text" name="tech_search" class="form-input" placeholder="Search technologies…"
+             value="{{ tech_search }}" style="width: 240px; font-size: var(--sx-text-xs); padding: var(--sx-space-1) var(--sx-space-2);">
+      <label style="font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; white-space: nowrap;">Sort:</label>
+      <select name="sort_by" class="form-input" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1) var(--sx-space-2); width: auto;" onchange="this.form.submit()">
+        <option value="alpha" {% if sort_by == "alpha" %}selected{% endif %}>Alphabetical</option>
+        <option value="count" {% if sort_by == "count" %}selected{% endif %}>Most Used</option>
+      </select>
+      <button type="submit" class="btn-primary" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1) var(--sx-space-3);">Search</button>
+      {% if tech_search %}
+      <a href="{% url 'scanner:assets' %}?sort_by={{ sort_by }}" class="btn-ghost" style="font-size: var(--sx-text-xs); padding: var(--sx-space-1) var(--sx-space-2);">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    {% if tech_page %}
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: var(--sx-text-sm);">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--sx-border); text-align: left;">
+            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Technology</th>
+            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Targets</th>
+            <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Subdomains</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tech, subdomains, targets in tech_page %}
+          <tr style="border-bottom: 1px solid var(--sx-border);">
+            <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary); font-size: var(--sx-text-sm);">{{ tech }}</td>
+            <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">{{ targets }}</td>
+            <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">{{ subdomains }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if tech_page.has_other_pages %}
+    <div class="pagination" style="margin: 0; padding: var(--sx-space-3) var(--sx-space-4); border-top: 1px solid var(--sx-border);">
+      <div class="info" style="margin-left: var(--sx-space-3);">Page {{ tech_page.number }} of {{ tech_page.paginator.num_pages }}</div>
+      <div class="controls" style="margin-right: var(--sx-space-2); margin-top: calc(var(--sx-space-2) * -1);">
+        {% if tech_page.has_previous %}
+          <a href="?page={{ tech_page.previous_page_number }}{% if tech_search %}&tech_search={{ tech_search }}{% endif %}&sort_by={{ sort_by }}" class="btn-ghost">‹ Prev</a>
+        {% else %}
+          <button class="btn-ghost" disabled>‹ Prev</button>
+        {% endif %}
+        {% if tech_page.has_next %}
+          <a href="?page={{ tech_page.next_page_number }}{% if tech_search %}&tech_search={{ tech_search }}{% endif %}&sort_by={{ sort_by }}" class="btn-ghost">Next ›</a>
+        {% else %}
+          <button class="btn-ghost" disabled>Next ›</button>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state" style="padding: var(--sx-space-8);">
+      <div class="icon">🛠️</div>
+      {% if tech_search %}
+      <h2>No technologies found</h2>
+      <p>No technologies match "{{ tech_search }}". Try a different search term.</p>
+      {% else %}
+      <h2>No technologies detected</h2>
+      <p>Run a scan to detect technologies from HTTP results.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

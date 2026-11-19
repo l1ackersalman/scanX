@@ -21,4 +21,5 @@ urlpatterns = [
     path("programs/edit/<int:program_id>/", views.edit_program, name="programs_edit"),
     path("programs/delete/<int:program_id>/", views.delete_program, name="programs_delete"),
     path("programs/<int:program_id>/", views.program_detail, name="program_detail"),
+    path("assets/", views.assets, name="assets"),
 ]

@@ -41,7 +41,7 @@
               </td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;">
                 {% if scan.program %}
-                  <span style="color: var(--sx-text-primary); font-weight: 500;">{{ scan.program.name }}</span>
+                  <a href="{% url 'scanner:program_detail' scan.program.id %}" style="color: var(--sx-accent); font-weight: 500;">{{ scan.program.name }}</a>
                 {% else %}
                   <span style="color: var(--sx-text-secondary);">—</span>
                 {% endif %}
