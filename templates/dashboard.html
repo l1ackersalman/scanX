@@ -68,7 +68,7 @@
             <tbody>
               {% for scan in scans %}
               <tr class="table-row">
-                <td class="table-cell-mono">
+                <td class="table-cell-mono table-cell-url">
                   <a href="{% url 'scanner:scan_detail' scan.id %}" class="link-primary">{{ scan.domain }}</a>
                 </td>
                 <td>

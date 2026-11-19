@@ -28,6 +28,7 @@ from .services import (
     get_technology_subdomains,
     get_program_statistics,
     get_programs_with_stats,
+    mark_new_subdomains,
 )
 from core.validators import validate_domain
 
@@ -156,6 +157,9 @@ def scan_detail(request, scan_id):
         }
         for r in httpx_results_raw
     ]
+
+    # Mark which subdomains are new compared to previous scans
+    httpx_results_all = mark_new_subdomains(scan, httpx_results_all)
 
     # --- Filtering ---
     status_filter = request.GET.get("status", "").strip()

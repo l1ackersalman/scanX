@@ -48,6 +48,7 @@
         <thead>
           <tr>
             <th>Subdomain</th>
+            <th class="table-cell-center">Status Code</th>
             <th>Program</th>
             <th>Platform</th>
             <th>Program Type</th>
@@ -60,6 +61,27 @@
           <tr class="table-row">
             <td class="table-cell-mono">
               <a href="{{ item.subdomain }}" target="_blank" rel="noopener noreferrer" class="link-primary">{{ item.subdomain }}</a>
+            </td>
+            <td class="table-cell-center table-cell-primary">
+              {% if item.status_code and item.status_code != "N/A" %}
+                {% if item.status_code|slice:":1" == "2" %}
+                <span class="http-badge http-status-success">{{ item.status_code }}</span>
+                {% elif item.status_code|slice:":1" == "3" %}
+                <span class="http-badge http-status-redirect">{{ item.status_code }}</span>
+                {% elif item.status_code == "403" %}
+                <span class="http-badge http-status-forbidden">{{ item.status_code }}</span>
+                {% elif item.status_code == "404" %}
+                <span class="http-badge http-status-not-found">{{ item.status_code }}</span>
+                {% elif item.status_code|slice:":1" == "5" %}
+                <span class="http-badge http-status-server-error">{{ item.status_code }}</span>
+                {% elif item.status_code|slice:":1" == "4" %}
+                <span class="http-badge http-status-client-error">{{ item.status_code }}</span>
+                {% else %}
+                <span class="http-badge http-status-unknown">{{ item.status_code }}</span>
+                {% endif %}
+              {% else %}
+              <span class="http-badge http-status-unreachable">N/A</span>
+              {% endif %}
             </td>
             <td class="table-cell-secondary">
               {% if item.program %}

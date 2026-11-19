@@ -326,9 +326,12 @@
               <tbody>
                 {% for result in httpx_page %}
                 <tr class="table-row">
-                  <td class="table-cell-mono">
+                  <td class="table-cell-mono table-cell-url">
                     {% if result.url %}
                     <a href="{{ result.url }}" target="_blank" rel="noopener noreferrer" class="link-primary">{{ result.url }}</a>
+                    {% if result.is_new %}
+                    <span class="badge badge-success" style="font-size: 0.625rem; padding: 0.125rem 0.375rem; margin-left: var(--sx-space-1);">New</span>
+                    {% endif %}
                     {% else %}
                     —
                     {% endif %}

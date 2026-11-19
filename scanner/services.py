@@ -590,6 +590,7 @@ def get_technology_subdomains(
       - subdomain: the URL/subdomain string
       - program: the Program object (or None)
       - scan: the Scan object where this tech was found
+      - status_code: the HTTP status code from the matching httpx result
     """
     from django.core.paginator import Paginator
 
@@ -607,6 +608,13 @@ def get_technology_subdomains(
                             "subdomain": subdomain,
                             "program": scan.program,
                             "scan": scan,
+                            "status_code": str(
+                                r.get("status-code")
+                                or r.get("status_code")
+                                or r.get("status")
+                                or r.get("statusCode")
+                                or "N/A"
+                            ),
                         }
                     )
                     break
@@ -624,3 +632,39 @@ def get_technology_subdomains(
         "total_subdomains": len(matching),
         "sort_by": "alpha",
     }
+
+
+def get_previous_scan_urls(scan: Scan) -> set[str]:
+    """
+    Return a set of all subdomain URLs from previous completed scans
+    of the same domain (excluding the current scan).
+    """
+    previous_urls: set[str] = set()
+
+    previous_scans = (
+        Scan.objects.filter(domain=scan.domain, status=Scan.Status.COMPLETED)
+        .exclude(id=scan.id)
+    )
+
+    for prev_scan in previous_scans:
+        for r in prev_scan.httpx_results or []:
+            url = r.get("url") or prev_scan.domain
+            if url:
+                previous_urls.add(url)
+
+    return previous_urls
+
+
+def mark_new_subdomains(scan: Scan, httpx_results: list[dict]) -> list[dict]:
+    """
+    Mark each httpx result with an `is_new` boolean indicating whether
+    the subdomain URL was seen in any previous completed scan of the
+    same domain.
+    """
+    previous_urls = get_previous_scan_urls(scan)
+
+    for r in httpx_results:
+        url = r.get("url") or scan.domain
+        r["is_new"] = url not in previous_urls
+
+    return httpx_results
