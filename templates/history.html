@@ -20,6 +20,8 @@
             <tr style="border-bottom: 1px solid var(--sx-border); text-align: left;">
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Domain</th>
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Status</th>
+              <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Program</th>
+              <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Platform</th>
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Created</th>
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Started</th>
               <th style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-weight: 600; font-size: var(--sx-text-xs); text-transform: uppercase;">Completed</th>
@@ -36,6 +38,23 @@
               </td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4);">
                 <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
+              </td>
+              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;">
+                {% if scan.program %}
+                  <span style="color: var(--sx-text-primary); font-weight: 500;">{{ scan.program.name }}</span>
+                {% else %}
+                  <span style="color: var(--sx-text-secondary);">—</span>
+                {% endif %}
+              </td>
+              <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); text-align: left; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;">
+                {% if scan.program %}
+                  {{ scan.program.get_platform_display }} · 
+                  {% if scan.program.program_type == "bbp" %}BBP
+                  {% elif scan.program.program_type == "vdp" %}VDP
+                  {% else %}PENTEST{% endif %}
+                {% else %}
+                  —
+                {% endif %}
               </td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.created_at|date:"M d, Y H:i" }}</td>
               <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">{{ scan.started_at|date:"M d, H:i"|default:"—" }}</td>
