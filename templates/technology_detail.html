@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}{{ technology }} — scanX{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <a href="{% url 'scanner:assets' %}" class="btn-ghost" style="padding: var(--sx-space-2) var(--sx-space-4); font-size: var(--sx-text-sm); display: inline-block;">← Back to Technologies</a>
+  <h1>Technology: {{ technology }}</h1>
+  <p>Subdomains using <strong>{{ technology }}</strong>, grouped by authorized program.</p>
+</div>
+
+<!-- Summary Stats -->
+<section class="card" aria-labelledby="tech-summary-title" style="margin-bottom: var(--sx-space-5);">
+  <div class="card-head">
+    <h2 id="tech-summary-title" class="card-title" style="margin: 0;">Summary</h2>
+  </div>
+  <div class="card-body">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Technology</div>
+        <div class="stat-value">{{ technology }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Subdomains</div>
+        <div class="stat-value">{{ total_subdomains }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Programs</div>
+        <div class="stat-value">{{ distinct_programs }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Scans</div>
+        <div class="stat-value">{{ subdomain_page.paginator.count }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Subdomains Table -->
+<section class="card" aria-labelledby="tech-subdomains-title">
+  <div class="card-head">
+    <h2 id="tech-subdomains-title" class="card-title" style="margin: 0;">Subdomains Using {{ technology }}</h2>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    {% if subdomain_page %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Subdomain</th>
+            <th>Program</th>
+            <th>Platform</th>
+            <th>Program Type</th>
+            <th>Scan Date</th>
+            <th>Scan Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in subdomain_page %}
+          <tr class="table-row">
+            <td class="table-cell-mono">
+              <a href="{{ item.subdomain }}" target="_blank" rel="noopener noreferrer" class="link-primary">{{ item.subdomain }}</a>
+            </td>
+            <td class="table-cell-secondary">
+              {% if item.program %}
+                <a href="{% url 'scanner:program_detail' item.program.id %}" class="link-primary">{{ item.program.name }}</a>
+              {% else %}
+                <span class="text-secondary">—</span>
+              {% endif %}
+            </td>
+            <td class="table-cell-secondary">
+              {% if item.program %}
+                {{ item.program.get_platform_display }}
+              {% else %}
+                <span class="text-secondary">—</span>
+              {% endif %}
+            </td>
+            <td class="table-cell-secondary">
+              {% if item.program %}
+                {% if item.program.program_type == "bbp" %}BBP
+                {% elif item.program.program_type == "vdp" %}VDP
+                {% else %}PENTEST{% endif %}
+              {% else %}
+                <span class="text-secondary">—</span>
+              {% endif %}
+            </td>
+            <td class="table-cell-secondary">
+              {% if item.scan.started_at %}
+                {{ item.scan.started_at|date:"M d, Y h:i A" }}
+              {% else %}
+                <span class="text-secondary">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="status-badge status-{{ item.scan.status }}">{{ item.scan.get_status_display }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if subdomain_page.has_other_pages %}
+    <div class="pagination pagination-sm">
+      <div class="info">Page {{ subdomain_page.number }} of {{ subdomain_page.paginator.num_pages }}</div>
+      <div class="controls">
+        {% if subdomain_page.has_previous %}
+          <a href="?tech={{ technology }}&page={{ subdomain_page.previous_page_number }}" class="btn-ghost btn-sm">‹ Prev</a>
+        {% else %}
+          <button class="btn-ghost btn-sm" disabled>‹ Prev</button>
+        {% endif %}
+        {% if subdomain_page.has_next %}
+          <a href="?tech={{ technology }}&page={{ subdomain_page.next_page_number }}" class="btn-ghost btn-sm">Next ›</a>
+        {% else %}
+          <button class="btn-ghost btn-sm" disabled>Next ›</button>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state empty-state-lg">
+      <div class="icon">🔍</div>
+      <h2>No subdomains found</h2>
+      <p>No subdomains detected using <strong>{{ technology }}</strong> yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

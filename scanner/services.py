@@ -575,3 +575,52 @@ def get_programs_with_stats() -> list[dict]:
             }
         )
     return results
+
+
+def get_technology_subdomains(
+    technology: str,
+    page_number: int | None = None,
+    per_page: int = 50,
+) -> dict:
+    """
+    Return paginated list of subdomains using a specific technology,
+    along with the program each subdomain belongs to.
+
+    Each item is a dict with keys:
+      - subdomain: the URL/subdomain string
+      - program: the Program object (or None)
+      - scan: the Scan object where this tech was found
+    """
+    from django.core.paginator import Paginator
+
+    matching = []
+    seen_subdomains: set[str] = set()
+
+    for scan in Scan.objects.all().select_related("program"):
+        for r in scan.httpx_results or []:
+            subdomain = r.get("url") or scan.domain
+            for tech in _extract_tech_from_entry(r):
+                if tech == technology and subdomain not in seen_subdomains:
+                    seen_subdomains.add(subdomain)
+                    matching.append(
+                        {
+                            "subdomain": subdomain,
+                            "program": scan.program,
+                            "scan": scan,
+                        }
+                    )
+                    break
+
+    # Sort by subdomain name alphabetically
+    matching.sort(key=lambda x: x["subdomain"].lower())
+
+    # Paginate
+    paginator = Paginator(matching, per_page)
+    page = paginator.get_page(page_number)
+
+    return {
+        "technology": technology,
+        "subdomain_page": page,
+        "total_subdomains": len(matching),
+        "sort_by": "alpha",
+    }

@@ -25,6 +25,7 @@ from .services import (
     run_scan_in_background,
     get_assets_overview,
     get_technology_breakdown,
+    get_technology_subdomains,
     get_program_statistics,
     get_programs_with_stats,
 )
@@ -477,3 +478,36 @@ def assets(request):
         "page_title": "Assets",
     }
     return render(request, "assets.html", context)
+
+
+def technology_detail(request):
+    """
+    Technology detail page — shows all subdomains using a specific technology,
+    along with the program each subdomain belongs to.
+    """
+    technology = request.GET.get("tech", "").strip()
+
+    if not technology:
+        messages.warning(request, "No technology specified.")
+        return redirect("scanner:assets")
+
+    tech_data = get_technology_subdomains(
+        technology=technology,
+        page_number=request.GET.get("page"),
+        per_page=50,
+    )
+
+    # Count distinct programs across matching subdomains
+    distinct_programs = set()
+    for item in tech_data["subdomain_page"].object_list:
+        if item["program"]:
+            distinct_programs.add(item["program"].id)
+
+    context = {
+        "technology": technology,
+        "subdomain_page": tech_data["subdomain_page"],
+        "total_subdomains": tech_data["total_subdomains"],
+        "distinct_programs": len(distinct_programs),
+        "page_title": f"Technology: {technology}",
+    }
+    return render(request, "technology_detail.html", context)

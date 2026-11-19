@@ -110,7 +110,9 @@
         <tbody>
           {% for tech, subdomains, targets in tech_page %}
           <tr style="border-bottom: 1px solid var(--sx-border);">
-            <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary); font-size: var(--sx-text-sm);">{{ tech }}</td>
+            <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-primary); font-size: var(--sx-text-sm);">
+              <a href="{% url 'scanner:technology_detail' %}?tech={{ tech|urlencode }}" class="link-primary">{{ tech }}</a>
+            </td>
             <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">{{ targets }}</td>
             <td style="padding: var(--sx-space-3) var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); font-family: var(--sx-font-mono);">{{ subdomains }}</td>
           </tr>
