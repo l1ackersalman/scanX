@@ -15,10 +15,8 @@ class AssetsViewTests(TestCase):
         self.client = Client()
         self.program = Program.objects.create(
             name="Test Program",
-            title="TP",
             description="A test program",
-            platform=Program.Platform.HACKERONE,
-            program_type=Program.ProgramType.BBP,
+            organization_type=Program.OrganizationType.FINTECH,
         )
         self.scan = Scan.objects.create(
             domain="example.com",
@@ -44,7 +42,6 @@ class AssetsViewTests(TestCase):
     def test_overview_stats_in_context(self):
         response = self.client.get(reverse("scanner:assets"))
         self.assertEqual(response.context["total_programs"], 1)
-        self.assertEqual(response.context["bbp_programs"], 1)
         self.assertEqual(response.context["total_scans"], 1)
         self.assertEqual(response.context["total_targets"], 1)
         self.assertEqual(response.context["total_subdomains"], 100)
@@ -117,14 +114,13 @@ class AssetsViewTests(TestCase):
 
 
 class ProgramDetailViewTests(TestCase):
-    """Tests for program_detail view using service layer."""
+    """Tests for organization_detail view using service layer."""
 
     def setUp(self):
         self.client = Client()
         self.program = Program.objects.create(
             name="Test Program",
-            platform=Program.Platform.HACKERONE,
-            program_type=Program.ProgramType.BBP,
+            organization_type=Program.OrganizationType.FINTECH,
         )
         self.scan = Scan.objects.create(
             domain="example.com",
@@ -137,12 +133,12 @@ class ProgramDetailViewTests(TestCase):
         )
 
     def test_program_detail_returns_200(self):
-        response = self.client.get(reverse("scanner:program_detail", args=[self.program.id]))
+        response = self.client.get(reverse("scanner:organization_detail", args=[self.program.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Test Program")
 
     def test_program_stats_in_context(self):
-        response = self.client.get(reverse("scanner:program_detail", args=[self.program.id]))
+        response = self.client.get(reverse("scanner:organization_detail", args=[self.program.id]))
         self.assertEqual(response.context["total_scans"], 1)
         self.assertEqual(response.context["total_targets"], 1)
         self.assertEqual(response.context["completed_scans"], 1)
@@ -155,8 +151,7 @@ class TechnologyDetailViewTests(TestCase):
         self.client = Client()
         self.program = Program.objects.create(
             name="Test Program",
-            platform=Program.Platform.HACKERONE,
-            program_type=Program.ProgramType.BBP,
+            organization_type=Program.OrganizationType.FINTECH,
         )
         self.scan = Scan.objects.create(
             domain="example.com",
@@ -185,12 +180,11 @@ class TechnologyDetailViewTests(TestCase):
     def test_program_link_shown(self):
         response = self.client.get(reverse("scanner:technology_detail") + "?tech=nginx")
         self.assertContains(response, "Test Program")
-        self.assertContains(response, reverse("scanner:program_detail", args=[self.program.id]))
+        self.assertContains(response, reverse("scanner:organization_detail", args=[self.program.id]))
 
     def test_platform_and_type_shown(self):
         response = self.client.get(reverse("scanner:technology_detail") + "?tech=nginx")
-        self.assertContains(response, "HackerOne")
-        self.assertContains(response, "BBP")
+        self.assertContains(response, "Fintech")
 
     def test_nonexistent_tech_empty(self):
         response = self.client.get(reverse("scanner:technology_detail") + "?tech=nonexistent")

@@ -454,13 +454,6 @@ def get_assets_overview() -> dict:
     for the Assets overview page.
     """
     total_programs = Program.objects.count()
-    bbp_programs = Program.objects.filter(program_type=Program.ProgramType.BBP).count()
-    vdp_programs = Program.objects.filter(program_type=Program.ProgramType.VDP).count()
-    pentest_programs = Program.objects.filter(program_type=Program.ProgramType.PENTEST).count()
-
-    platform_stats: dict[str, int] = defaultdict(int)
-    for program in Program.objects.all():
-        platform_stats[program.get_platform_display()] += 1
 
     total_scans = Scan.objects.count()
     completed_scans = Scan.objects.filter(status=Scan.Status.COMPLETED).count()
@@ -478,10 +471,6 @@ def get_assets_overview() -> dict:
 
     return {
         "total_programs": total_programs,
-        "bbp_programs": bbp_programs,
-        "vdp_programs": vdp_programs,
-        "pentest_programs": pentest_programs,
-        "platform_stats": dict(platform_stats),
         "total_scans": total_scans,
         "completed_scans": completed_scans,
         "running_scans": running_scans,

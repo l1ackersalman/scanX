@@ -3,12 +3,20 @@ scanX Scanner Views
 
 Dashboard, scan initiation, live logs, and scan history.
 """
+"""
+scanX Scanner Views
+
+Dashboard, scan initiation, live logs, and scan history.
+"""
 import json
 import logging
+import socket
+import sys
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import (
     HttpResponse,
@@ -19,7 +27,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Scan, Program
+from .models import Scan, Program, Report
 from .services import (
     get_log_lines,
     run_scan_in_background,
@@ -102,27 +110,35 @@ def start_scan(request):
     program_id = request.POST.get("program", "").strip()
 
     # Validation
-    errors = []
+    domain_error = ""
+    program_error = ""
+    
     if not domain:
-        errors.append("Domain is required.")
+        domain_error = "Domain is required."
     else:
         try:
             validate_domain(domain)
         except Exception as e:
-            errors.append(str(e))
+            domain_error = str(e)
 
     if not program_id:
-        errors.append("Program selection is required.")
+        program_error = "Please add organization before scan."
     else:
         try:
             Program.objects.get(id=program_id)
         except Program.DoesNotExist:
-            errors.append("Selected program does not exist.")
+            program_error = "Selected program does not exist."
 
-    if errors:
-        for error in errors:
-            messages.error(request, error)
-        return redirect("scanner:dashboard")
+    if domain_error or program_error:
+        programs = Program.objects.all().order_by("-created_at")
+        context = {
+            "domain": domain,
+            "program_error": program_error,
+            "domain_error": domain_error,
+            "programs": programs,
+            "page_title": "Dashboard",
+        }
+        return render(request, "dashboard.html", context)
 
     # Create scan record (authorization fields removed from UI)
     scan = Scan.objects.create(
@@ -279,11 +295,11 @@ def scan_history(request):
 
 def programs(request):
     """
-    Programs page - shows all Programs with statistics.
+    Organizations page - shows all Organizations with statistics.
     """
     context = {
-        "programs": get_programs_with_stats(),
-        "page_title": "Programs",
+        "organizations": get_programs_with_stats(),
+        "page_title": "Organizations",
     }
     return render(request, "programs.html", context)
 
@@ -291,145 +307,119 @@ def programs(request):
 @require_http_methods(["GET", "POST"])
 def create_program(request):
     """
-    Create a new program from the Add Program page.
+    Create a new organization from the Add Organization page.
     """
     if request.method == "POST":
-        title = request.POST.get("title", "").strip()
         name = request.POST.get("program_name", "").strip()
         description = request.POST.get("description", "").strip()
-        platform = request.POST.get("program_platform", "").strip()
-        program_type = request.POST.get("program_type", "").strip()
+        organization_type = request.POST.get("program_type", "").strip()
 
         errors = []
-        if not title:
-            errors.append("Title is required.")
         if not name:
-            errors.append("Program name is required.")
-        if not description:
-            errors.append("Description is required.")
-        if not platform:
-            errors.append("Platform is required.")
-        if not program_type:
-            errors.append("Program type is required.")
+            errors.append("Organization name is required.")
+        if not organization_type:
+            errors.append("Organization type is required.")
 
-        # Validate platform and program type against model choices
-        valid_platforms = [c[0] for c in Program.Platform.choices]
-        valid_types = [c[0] for c in Program.ProgramType.choices]
-        if platform and platform not in valid_platforms:
-            errors.append("Invalid platform selected.")
-        if program_type and program_type not in valid_types:
-            errors.append("Invalid program type selected.")
+        # Validate organization type against model choices
+        valid_types = [c[0] for c in Program.OrganizationType.choices]
+        if organization_type and organization_type not in valid_types:
+            errors.append("Invalid organization type selected.")
 
         if errors:
             for error in errors:
                 messages.error(request, error)
-            return redirect("scanner:programs_add")
+            return redirect("scanner:organizations_add")
 
         try:
             program, created = Program.objects.get_or_create(
                 name=name,
                 defaults={
-                    "title": title,
                     "description": description,
-                    "platform": platform,
-                    "program_type": program_type,
+                    "organization_type": organization_type,
                 },
             )
             if created:
-                messages.success(request, f"Program '{name}' created successfully.")
+                messages.success(request, f"Organization '{name}' created successfully.")
             else:
-                messages.info(request, f"Program '{name}' already exists.")
+                messages.info(request, f"Organization '{name}' already exists.")
         except Exception as e:
-            messages.error(request, f"Failed to create program: {e}")
+            messages.error(request, f"Failed to create organization: {e}")
 
-        return redirect("scanner:programs")
+        return redirect("scanner:organizations")
 
-    # GET request - show the create program form
+    # GET request - show the create organization form
     return render(request, "programs_add.html")
 
 
 @require_http_methods(["GET", "POST"])
-def edit_program(request, program_id):
+def edit_program(request, organization_id):
     """
-    Edit an existing program.
+    Edit an existing organization.
     """
-    program = get_object_or_404(Program, id=program_id)
+    program = get_object_or_404(Program, id=organization_id)
 
     if request.method == "POST":
-        title = request.POST.get("title", "").strip()
         name = request.POST.get("program_name", "").strip()
         description = request.POST.get("description", "").strip()
-        platform = request.POST.get("program_platform", "").strip()
-        program_type = request.POST.get("program_type", "").strip()
+        organization_type = request.POST.get("program_type", "").strip()
 
         errors = []
-        if not title:
-            errors.append("Title is required.")
         if not name:
-            errors.append("Program name is required.")
-        if not description:
-            errors.append("Description is required.")
-        if not platform:
-            errors.append("Platform is required.")
-        if not program_type:
-            errors.append("Program type is required.")
+            errors.append("Organization name is required.")
+        if not organization_type:
+            errors.append("Organization type is required.")
 
-        # Validate platform and program type against model choices
-        valid_platforms = [c[0] for c in Program.Platform.choices]
-        valid_types = [c[0] for c in Program.ProgramType.choices]
-        if platform and platform not in valid_platforms:
-            errors.append("Invalid platform selected.")
-        if program_type and program_type not in valid_types:
-            errors.append("Invalid program type selected.")
+        # Validate organization type against model choices
+        valid_types = [c[0] for c in Program.OrganizationType.choices]
+        if organization_type and organization_type not in valid_types:
+            errors.append("Invalid organization type selected.")
 
         if errors:
             for error in errors:
                 messages.error(request, error)
-            return redirect("scanner:programs_edit", program_id=program.id)
+            return redirect("scanner:organizations_edit", organization_id=program.id)
 
         try:
-            program.title = title
             program.name = name
             program.description = description
-            program.platform = platform
-            program.program_type = program_type
+            program.organization_type = organization_type
             program.save()
-            messages.success(request, f"Program '{name}' updated successfully.")
+            messages.success(request, f"Organization '{name}' updated successfully.")
         except Exception as e:
-            messages.error(request, f"Failed to update program: {e}")
+            messages.error(request, f"Failed to update organization: {e}")
 
-        return redirect("scanner:programs")
+        return redirect("scanner:organizations")
 
     context = {
         "program": program,
-        "page_title": f"Edit Program — {program.name}",
+        "page_title": f"Edit Organization — {program.name}",
     }
     return render(request, "programs_edit.html", context)
 
 
 @require_http_methods(["POST"])
-def delete_program(request, program_id):
+def delete_program(request, organization_id):
     """
-    Delete a program.
+    Delete an organization.
     """
-    program = get_object_or_404(Program, id=program_id)
+    program = get_object_or_404(Program, id=organization_id)
     program_name = program.name
 
     try:
         program.delete()
-        messages.success(request, f"Program '{program_name}' deleted successfully.")
+        messages.success(request, f"Organization '{program_name}' deleted successfully.")
     except Exception as e:
-        messages.error(request, f"Failed to delete program: {e}")
+        messages.error(request, f"Failed to delete organization: {e}")
 
-    return redirect("scanner:programs")
+    return redirect("scanner:organizations")
 
 
 @require_http_methods(["GET"])
-def program_detail(request, program_id):
+def program_detail(request, organization_id):
     """
-    Program detail page: shows all scans for a program with aggregate statistics.
+    Organization detail page: shows all scans for an organization with aggregate statistics.
     """
-    program = get_object_or_404(Program, id=program_id)
+    program = get_object_or_404(Program, id=organization_id)
 
     # Aggregate stats from service layer
     stats = get_program_statistics(program)
@@ -515,3 +505,147 @@ def technology_detail(request):
         "page_title": f"Technology: {technology}",
     }
     return render(request, "technology_detail.html", context)
+
+
+# =====================================================================
+# Reports (MCP Analysis Reports)
+# =====================================================================
+
+def reports_list(request):
+    """
+    Reports listing page — shows all AI-generated analysis reports.
+    """
+    reports_list = Report.objects.select_related("scan", "scan__program").order_by("-created_at")
+    paginator = Paginator(reports_list, 15)
+    page_number = request.GET.get("page")
+    reports = paginator.get_page(page_number)
+    
+    context = {
+        "reports": reports,
+        "page_title": "Reports",
+    }
+    return render(request, "reports.html", context)
+
+
+def mcp_guide(request):
+    """
+    MCP Guide page — explains how to use MCP with ScanX.
+    """
+    context = {
+        "page_title": "MCP Guide",
+    }
+    return render(request, "mcp_guide.html", context)
+
+
+def report_detail(request, report_id):
+    """
+    Report detail page — view a single AI-generated report.
+    """
+    report = get_object_or_404(Report, id=report_id)
+    
+    context = {
+        "report": report,
+        "page_title": f"Report: {report.title}",
+    }
+    return render(request, "report_detail.html", context)
+
+
+@require_http_methods(["POST"])
+def report_download(request, report_id):
+    """
+    Download a report as Markdown file.
+    """
+    report = get_object_or_404(Report, id=report_id)
+    
+    # Create markdown content
+    md_content = f"""# {report.title}
+
+**Report Type:** {report.get_report_type_display()}
+**Scan:** {report.scan.domain}
+**Organization:** {report.scan.program.name if report.scan.program else 'N/A'}
+**Scan Date:** {report.scan.completed_at.strftime('%Y-%m-%d %H:%M') if report.scan.completed_at else 'N/A'}
+**Generated By:** {report.generated_by}
+**Generated At:** {report.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+
+---
+
+## Summary
+
+{report.summary}
+
+---
+
+## Findings
+
+{report.content}
+
+---
+
+## Structured Findings
+
+```json
+{json.dumps(report.findings, indent=2) if report.findings else '{}'}
+```
+"""
+    
+    response = HttpResponse(md_content, content_type="text/markdown")
+    filename = f"scanx-report-{report.id}.md"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+# =====================================================================
+# MCP HTTP Server Management
+# =====================================================================
+
+@login_required
+@require_http_methods(["GET"])
+def mcp_http_status(request):
+    """Check if MCP HTTP server is running on port 8001"""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        result = sock.connect_ex(('127.0.0.1', 8001))
+        sock.close()
+        running = result == 0
+    except Exception:
+        running = False
+
+    # Get VPS IP for external connection
+    vps_ip = getattr(settings, 'MCP_VPS_IP', None)
+    if not vps_ip:
+        # Try to detect external IP
+        try:
+            vps_ip = socket.gethostbyname(socket.gethostname())
+        except Exception:
+            vps_ip = 'your-vps-ip'
+
+    return JsonResponse({
+        'running': running,
+        'url': f'http://{vps_ip}:8001/mcp' if running else None,
+        'port': 8001,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def mcp_http_start(request):
+    """Start MCP HTTP server in background"""
+    try:
+        # Check if already running
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        result = sock.connect_ex(('127.0.0.1', 8001))
+        sock.close()
+        if result == 0:
+            return JsonResponse({'status': 'already_running', 'message': 'MCP HTTP server is already running'})
+
+        # Start server in background
+        subprocess.Popen([
+            sys.executable, 'manage.py', 'mcp_server_http',
+            '--host', '0.0.0.0',
+            '--port', '8001'
+        ], cwd=settings.BASE_DIR, start_new_session=True)
+
+        return JsonResponse({'status': 'starting', 'message': 'MCP HTTP server starting...'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

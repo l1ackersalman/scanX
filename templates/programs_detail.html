@@ -10,26 +10,19 @@
     {{ program.description }}
   </p>
   <div style="display: flex; gap: var(--sx-space-2); margin-top: var(--sx-space-2);">
-    <span class="badge badge-info">{{ program.get_platform_display }}</span>
-    {% if program.program_type == "bbp" %}
-    <span class="badge badge-success">BBP</span>
-    {% elif program.program_type == "vdp" %}
-    <span class="badge badge-warning">VDP</span>
-    {% else %}
-    <span class="badge badge-danger">PENTEST</span>
-    {% endif %}
+    <span class="badge badge-info">{{ program.get_organization_type_display }}</span>
   </div>
 </div>
 
 <div style="display: flex; gap: var(--sx-space-3); margin-bottom: var(--sx-space-4); flex-wrap: wrap;">
-  <a href="{% url 'scanner:programs_edit' program.id %}" class="btn-ghost">Edit Program</a>
-  <a href="{% url 'scanner:programs' %}" class="btn-ghost">Back to Programs</a>
+  <a href="{% url 'scanner:organizations_edit' program.id %}" class="btn-ghost">Edit Organization</a>
+  <a href="{% url 'scanner:organizations' %}" class="btn-ghost">Back to Organizations</a>
 </div>
 
-<!-- Program Statistics -->
+<!-- Organization Statistics -->
 <section class="card" aria-labelledby="program-stats-title" style="margin-bottom: var(--sx-space-5);">
   <div class="card-head">
-    <h2 id="program-stats-title" class="card-title" style="margin: 0;">Program Statistics</h2>
+    <h2 id="program-stats-title" class="card-title" style="margin: 0;">Organization Statistics</h2>
   </div>
   <div class="card-body">
     <div class="stats-grid">
@@ -77,12 +70,8 @@
 
     <div style="margin-top: var(--sx-space-4); padding-top: var(--sx-space-4); border-top: 1px solid var(--sx-border); font-size: var(--sx-text-sm); color: var(--sx-text-secondary);">
       <div style="display: flex; justify-content: space-between; margin-bottom: var(--sx-space-1);">
-        <span>Platform</span>
-        <span>{{ program.get_platform_display }}</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; margin-bottom: var(--sx-space-1);">
-        <span>Program Type</span>
-        <span>{{ program.get_program_type_display }}</span>
+        <span>Organization Type</span>
+        <span>{{ program.get_organization_type_display }}</span>
       </div>
       <div style="display: flex; justify-content: space-between; margin-bottom: var(--sx-space-1);">
         <span>Created</span>

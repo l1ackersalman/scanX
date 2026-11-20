@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Add Program — scanX{% endblock %}
+{% block title %}Add Organization — scanX{% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
   <div class="page-banner">
-  <h1>Add Program</h1>
+  <h1>Add Organization</h1>
   <p>Register an authorized bug bounty or disclosure program.</p>
 </div>
 
@@ -14,54 +14,50 @@
     <h2 class="card-title" style="margin: 0;">New Program</h2>
   </div>
   <div class="card-body">
-    <form method="post" action="{% url 'scanner:programs_add' %}" novalidate>
+    <form method="post" action="{% url 'scanner:organizations_add' %}" novalidate>
       {% csrf_token %}
       <div class="form-group">
-        <label for="program_name" class="form-label">Program Name</label>
+        <label for="program_name" class="form-label">Organization Name</label>
         <input type="text" id="program_name" name="program_name" class="form-input"
                required placeholder="e.g. Snapchat" autocomplete="off">
         <small class="form-text">Authorized target domain or organization name.</small>
       </div>
 
       <div class="form-group">
-        <label for="program_title" class="form-label">Title</label>
-        <input type="text" id="program_title" name="title" class="form-input"
-               required placeholder="e.g. EDU" autocomplete="off">
-        <small class="form-text">Short display title for the program card.</small>
-      </div>
-
-      <div class="form-group">
         <label for="program_description" class="form-label">Description</label>
         <textarea id="program_description" name="description" class="form-input form-textarea"
-                  required placeholder="e.g. Let it empty for future" rows="3" autocomplete="off"></textarea>
+                  placeholder="e.g. Let it empty for future (optional)" rows="3" autocomplete="off"></textarea>
         <small class="form-text">Description shown on the program card.</small>
       </div>
 
       <div class="form-group">
-        <label for="program_platform" class="form-label">Platform</label>
-        <select id="program_platform" name="program_platform" class="form-input" required>
-          <option value="">Select platform</option>
-          <option value="hackerone">HackerOne</option>
-          <option value="bugcrowd">Bugcrowd</option>
-          <option value="intigriti">Intigriti</option>
-          <option value="synack">Synack</option>
-          <option value="self">Self</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="program_type" class="form-label">Program Type</label>
+        <label for="program_type" class="form-label">Organization Type</label>
         <select id="program_type" name="program_type" class="form-input" required>
-          <option value="">Select program type</option>
-          <option value="bbp">BBP</option>
-          <option value="vdp">VDP</option>
-          <option value="pentest">PENTEST</option>
+          <option value="">Select organization type</option>
+          <option value="fintech">Fintech</option>
+          <option value="agriculture">Agriculture</option>
+          <option value="research">Research</option>
+          <option value="education">Education</option>
+          <option value="healthcare">Healthcare</option>
+          <option value="government">Government</option>
+          <option value="retail">Retail</option>
+          <option value="manufacturing">Manufacturing</option>
+          <option value="technology">Technology</option>
+          <option value="energy">Energy</option>
+          <option value="telecommunications">Telecommunications</option>
+          <option value="transportation">Transportation</option>
+          <option value="media">Media</option>
+          <option value="hospitality">Hospitality</option>
+          <option value="real_estate">Real Estate</option>
+          <option value="consulting">Consulting</option>
+          <option value="non_profit">Non-Profit</option>
+          <option value="other">Other</option>
         </select>
       </div>
 
       <div style="display: flex; gap: var(--sx-space-3); margin-top: var(--sx-space-6);">
-        <button type="submit" class="btn-primary">Create Program</button>
-        <a href="{% url 'scanner:programs' %}" class="btn-ghost">Cancel</a>
+        <button type="submit" class="btn-primary">Create Organization</button>
+        <a href="{% url 'scanner:organizations' %}" class="btn-ghost">Cancel</a>
       </div>
     </form>
   </div>

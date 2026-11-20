@@ -6,27 +6,23 @@
 <div class="content-wrapper">
   <div class="page-banner">
   <h1>Assets</h1>
-  <p>Aggregate reconnaissance statistics across all authorized programs and scans.</p>
+  <p>Aggregate reconnaissance statistics across all authorized organizations and scans.</p>
 </div>
 
-<!-- Top Stats Grid -->
+<!-- Top Stats Grid (8 cards, 4 per row) -->
 <section class="card" aria-labelledby="assets-stats-title" style="margin-bottom: var(--sx-space-5);">
   <div class="card-head">
     <h2 id="assets-stats-title" class="card-title" style="margin: 0;">Overview Statistics</h2>
   </div>
   <div class="card-body">
-    <div class="stats-grid">
+    <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
       <div class="stat-card">
-        <div class="stat-label">Programs</div>
+        <div class="stat-label">Organizations</div>
         <div class="stat-value">{{ total_programs }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Targets</div>
         <div class="stat-value">{{ total_targets }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Platforms</div>
-        <div class="stat-value">{{ platform_stats|length }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Technologies</div>
@@ -51,29 +47,6 @@
       <div class="stat-card">
         <div class="stat-label">HTTP Failed</div>
         <div class="stat-value" style="color: var(--sx-danger);">{{ http_failed }}</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Program Type Breakdown -->
-<section class="card" aria-labelledby="program-type-title" style="margin-bottom: var(--sx-space-5);">
-  <div class="card-head">
-    <h2 id="program-type-title" class="card-title" style="margin: 0;">Program Type Breakdown</h2>
-  </div>
-  <div class="card-body">
-    <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-      <div class="stat-card">
-        <div class="stat-label">BBP</div>
-        <div class="stat-value" style="color: var(--sx-success);">{{ bbp_programs }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">VDP</div>
-        <div class="stat-value" style="color: var(--sx-warning);">{{ vdp_programs }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">PENTEST</div>
-        <div class="stat-value" style="color: var(--sx-danger);">{{ pentest_programs }}</div>
       </div>
     </div>
   </div>

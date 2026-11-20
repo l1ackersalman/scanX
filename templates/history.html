@@ -1,116 +1,175 @@
+
 {% extends "base.html" %}
 
 {% block title %}Scan History — scanX{% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
+
   <div class="page-banner">
-  <h1>History</h1>
-  <p>All reconnaissance scans with filtering and search.</p>
-</div>
-
-<section class="card" aria-labelledby="history-title">
-  <div class="card-head">
-    <h2 id="history-title" class="card-title">Scan History</h2>
+    <h1>History</h1>
+    <p>All reconnaissance scans with filtering and search.</p>
   </div>
-  <div class="card-body" style="padding: 0;">
-    {% if scans %}
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Domain</th>
-              <th>Status</th>
-              <th>Program</th>
-              <th>Platform</th>
-              <th>Created</th>
-              <th>Started</th>
-              <th>Completed</th>
-              <th>Duration</th>
-              <th>Results</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for scan in scans %}
-            <tr class="table-row">
-              <td class="table-cell-mono">
-                <a href="{% url 'scanner:scan_detail' scan.id %}" class="link-primary">{{ scan.domain }}</a>
-              </td>
-              <td>
-                <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
-              </td>
-              <td class="table-cell-secondary">
-                {% if scan.program %}
-                  <a href="{% url 'scanner:program_detail' scan.program.id %}" class="link-primary">{{ scan.program.name }}</a>
-                {% else %}
-                  <span class="text-secondary">—</span>
-                {% endif %}
-              </td>
-              <td class="table-cell-secondary">
-                {% if scan.program %}
-                  {{ scan.program.get_platform_display }} · 
-                  {% if scan.program.program_type == "bbp" %}BBP
-                  {% elif scan.program.program_type == "vdp" %}VDP
-                  {% else %}PENTEST{% endif %}
-                {% else %}
-                  —
-                {% endif %}
-              </td>
-              <td class="table-cell-secondary">
-                {{ scan.created_at|date:"M d, Y h:i A" }}
-              </td>
-              <td class="table-cell-secondary">
-                {{ scan.started_at|date:"M d, h:i A"|default:"—" }}
-              </td>
-              <td class="table-cell-secondary">
-                {{ scan.completed_at|date:"M d, h:i A"|default:"—" }}
-              </td>
-              <td class="table-cell-mono">
-                {{ scan.duration_display }}
-              </td>
-              <td class="table-cell-secondary">
-                {% if scan.total_subdomains %}
-                  {{ scan.total_subdomains }} subdomains · {{ scan.live_subdomains }} live · {{ scan.http_success }} OK
-                {% else %}—{% endif %}
-              </td>
-              <td class="table-cell-center">
-                {% if scan.status == "completed" %}
-                <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost btn-sm">View</a>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
 
-      <!-- Pagination -->
-      {% if scans.has_other_pages %}
-      <div class="pagination pagination-sm">
-        <div class="info">Page {{ scans.number }} of {{ scans.paginator.num_pages }}</div>
-        <div class="controls">
-          {% if scans.has_previous %}
-            <a href="?page={{ scans.previous_page_number }}" class="btn-ghost btn-sm">‹ Prev</a>
-          {% else %}
-            <button class="btn-ghost btn-sm" disabled>‹ Prev</button>
-          {% endif %}
-          {% if scans.has_next %}
-            <a href="?page={{ scans.next_page_number }}" class="btn-ghost btn-sm">Next ›</a>
-          {% else %}
-            <button class="btn-ghost btn-sm" disabled>Next ›</button>
-          {% endif %}
+  <section class="card" aria-labelledby="history-title">
+
+    <div class="card-head">
+      <h2 id="history-title" class="card-title">Scan History</h2>
+    </div>
+
+    <div class="card-body" style="padding: 0;">
+
+      {% if scans %}
+        <div class="table-wrap">
+          <table class="table">
+
+            <thead>
+              <tr>
+                <th>Domain</th>
+                <th>Status</th>
+                <th>Organization</th>
+                <th>Organization Type</th>
+                <th>Created</th>
+                <th>Started</th>
+                <th>Completed</th>
+                <th>Duration</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for scan in scans %}
+              <tr class="table-row">
+
+                <!-- Domain -->
+                <td class="table-cell-mono">
+                  <a href="{% url 'scanner:scan_detail' scan.id %}"
+                     class="link-primary">
+                    {{ scan.domain }}
+                  </a>
+                </td>
+
+                <!-- Status -->
+                <td>
+                  <span class="status-badge status-{{ scan.status }}">
+                    {{ scan.get_status_display }}
+                  </span>
+                </td>
+
+                <!-- Organization -->
+                <td class="table-cell-secondary">
+                  {% if scan.program %}
+                    <a href="{% url 'scanner:organization_detail' scan.program.id %}"
+                       class="link-primary">
+                      {{ scan.program.name }}
+                    </a>
+                  {% else %}
+                    <span class="text-secondary">—</span>
+                  {% endif %}
+                </td>
+
+                <!-- Organization Type -->
+                <td class="table-cell-secondary">
+                  {% if scan.program %}
+                    {{ scan.program.get_organization_type_display }}
+                  {% else %}
+                    <span class="text-secondary">—</span>
+                  {% endif %}
+                </td>
+
+                <!-- Created -->
+                <td class="table-cell-secondary">
+                  {{ scan.created_at|date:"M d, Y h:i A" }}
+                </td>
+
+                <!-- Started -->
+                <td class="table-cell-secondary">
+                  {{ scan.started_at|date:"M d, h:i A"|default:"—" }}
+                </td>
+
+                <!-- Completed -->
+                <td class="table-cell-secondary">
+                  {{ scan.completed_at|date:"M d, h:i A"|default:"—" }}
+                </td>
+
+                <!-- Duration -->
+                <td class="table-cell-mono">
+                  {{ scan.duration_display }}
+                </td>
+
+                <!-- Action -->
+                <td class="table-cell-center" style="text-align: left;">
+                  {% if scan.status == "completed" %}
+                    <a href="{% url 'scanner:scan_detail' scan.id %}"
+                       class="btn-ghost btn-sm">
+                      View
+                    </a>
+                  {% else %}
+                    <span class="text-secondary">—</span>
+                  {% endif %}
+                </td>
+
+              </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
         </div>
-      </div>
+
+        <!-- Pagination -->
+        {% if scans.has_other_pages %}
+        <div class="pagination pagination-sm">
+
+          <div class="info">
+            Page {{ scans.number }} of {{ scans.paginator.num_pages }}
+          </div>
+
+          <div class="controls">
+
+            {% if scans.has_previous %}
+              <a href="?page={{ scans.previous_page_number }}"
+                 class="btn-ghost btn-sm">
+                ‹ Prev
+              </a>
+            {% else %}
+              <button class="btn-ghost btn-sm" disabled>
+                ‹ Prev
+              </button>
+            {% endif %}
+
+            {% if scans.has_next %}
+              <a href="?page={{ scans.next_page_number }}"
+                 class="btn-ghost btn-sm">
+                Next ›
+              </a>
+            {% else %}
+              <button class="btn-ghost btn-sm" disabled>
+                Next ›
+              </button>
+            {% endif %}
+
+          </div>
+        </div>
+        {% endif %}
+
+      {% else %}
+
+        <!-- Empty State -->
+        <div class="empty-state empty-state-lg">
+          <div class="icon">📋</div>
+          <h2>No scans recorded</h2>
+          <p>
+            Start a new scan from the
+            <a href="{% url 'scanner:overview' %}" class="link-primary">
+              Overview
+            </a>.
+          </p>
+        </div>
+
       {% endif %}
-    {% else %}
-      <div class="empty-state empty-state-lg">
-        <div class="icon">📋</div>
-        <h2>No scans recorded</h2>
-        <p>Start a new scan from the <a href="{% url 'scanner:dashboard' %}" class="link-primary">Dashboard</a>.</p>
-      </div>
-    {% endif %}
-  </div>
-</section>
+
+    </div>
+  </section>
+
 </div>
 {% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reports — scanX{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <h1>Reports</h1>
+  <p>AI-generated analysis reports for completed scans.</p>
+</div>
+
+<div class="card">
+  <div class="card-body" style="padding: 0;">
+    {% if reports %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Scan</th>
+              <th>Organization</th>
+              <th>Status</th>
+              <th>Generated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for report in reports %}
+            <tr class="table-row">
+              <td class="table-cell-primary">
+                <a href="{% url 'scanner:report_detail' report.id %}" class="link-primary">{{ report.title }}</a>
+              </td>
+              <td>
+                <span class="badge badge-info">{{ report.get_report_type_display }}</span>
+              </td>
+              <td class="table-cell-mono table-cell-secondary">
+                <a href="{% url 'scanner:scan_detail' report.scan.id %}" class="link-primary">{{ report.scan.domain }}</a>
+              </td>
+              <td class="table-cell-secondary">
+                {% if report.scan.program %}
+                  {{ report.scan.program.name }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>
+                <span class="status-badge status-{{ report.status }}">{{ report.get_status_display }}</span>
+              </td>
+              <td class="table-cell-secondary">
+                {{ report.created_at|date:"M d, Y H:i" }}
+              </td>
+              <td class="table-cell-center">
+                <a href="{% url 'scanner:report_detail' report.id %}" class="btn-ghost btn-sm">View</a>
+                {% if report.status == "completed" %}
+                <a href="{% url 'scanner:report_download' report.id %}" class="btn-ghost btn-sm" style="margin-left: var(--sx-space-2);">Download</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if reports.has_other_pages %}
+      <div class="pagination pagination-sm">
+        <div class="info">Page {{ reports.number }} of {{ reports.paginator.num_pages }}</div>
+        <div class="controls">
+          {% if reports.has_previous %}
+            <a href="?page={{ reports.previous_page_number }}" class="btn-ghost btn-sm">‹ Prev</a>
+          {% else %}
+            <button class="btn-ghost btn-sm" disabled>‹ Prev</button>
+          {% endif %}
+          {% if reports.has_next %}
+            <a href="?page={{ reports.next_page_number }}" class="btn-ghost btn-sm">Next ›</a>
+          {% else %}
+            <button class="btn-ghost btn-sm" disabled>Next ›</button>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="empty-state empty-state-lg">
+        <div class="icon">📄</div>
+        <h2>No reports yet</h2>
+        <p>Generate AI analysis reports from completed scans to see them here.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

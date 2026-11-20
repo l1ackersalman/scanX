@@ -57,26 +57,26 @@ exec > >(tee -a "../$dir_name/report.txt") 2>&1
 
 # ========================[ RECON BLOCK ]========================
 
-echo "[✔] Scanning..."
+echo "[✔] Identifying Subdomains of $domain..."
 
 subfinder -d "$domain" -silent > subfinder.txt
-echo "[+] $(wc -l < subfinder.txt) domains found from subfinder."
+echo "[✔] Checking Live domains..."
 
 assetfinder --subs-only "$domain" > assetfinder.txt
-echo "[+] $(wc -l < assetfinder.txt) domains found from assetfinder."
+echo "[✔] Analyzing Technologies..."
 
 chaos -d "$domain" -key "$CHAOS_API_KEY" -silent > chaos.txt
-echo "[+] $(wc -l < chaos.txt) domains found from chaos."
+echo "[✔] Collecting Informations..."
 
 crt -s "$domain" > crt.txt
-echo "[+] $(wc -l < crt.txt) domains found from crt.sh."
+echo "[✔] Deep Scanning..."
 
 sort -u subfinder.txt assetfinder.txt chaos.txt crt.txt > alldomains.txt
 rm -f subfinder.txt assetfinder.txt chaos.txt crt.txt
-echo "[+] $(wc -l < alldomains.txt) unique domains found."
+echo "[✔] Checking IP & CNAME records..."
 
 dnsx -l alldomains.txt -silent -o live.txt > /dev/null 2>&1
-echo "[+] $(wc -l < live.txt) live domains found."
+echo "[✔] Final Evalution..."
 
 /home/insomniax/go/bin/httpx -sc -title -tech-detect -ip -cname -probe -silent -json -o httpx.json -l live.txt > /dev/null 2>&1
 

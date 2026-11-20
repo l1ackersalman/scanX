@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}MCP Guide — scanX{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+  <!-- Hero Section -->
+  <section class="hero-section" style="margin-bottom: var(--sx-space-8);">
+    <div class="hero-content">
+      <h1 class="hero-title">MCP Connection Guide</h1>
+      <p class="hero-subtitle">Connect AI agents to ScanX using HTTP/SSE (no SSH required).</p>
+    </div>
+  </section>
+
+  <!-- Method 3: HTTP/SSE (No SSH Required) -->
+  <section class="card" style="margin-bottom: var(--sx-space-6);">
+    <div class="card-head">
+      <h2 class="card-title" style="margin: 0;">Method 3: HTTP/SSE (No SSH Required)</h2>
+    </div>
+    <div class="card-body">
+      <p style="margin: 0 0 var(--sx-space-4); font-size: var(--sx-text-base); line-height: 1.6;">
+        Run MCP over HTTP/SSE using <code>mcp-remote</code> (requires Node.js). No SSH keys needed!
+      </p>
+
+      <!-- On Your VPS - Run HTTP MCP Server -->
+      <div style="background: var(--sx-background); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); padding: var(--sx-space-4); margin-bottom: var(--sx-space-4);">
+        <strong>On Your VPS - Run HTTP MCP Server:</strong>
+        <pre style="background: var(--sx-background); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); padding: var(--sx-space-3); overflow-x: auto; margin: var(--sx-space-2) 0; font-family: var(--sx-font-mono); font-size: var(--sx-text-sm);"><code># On your VPS - run HTTP MCP server on port 8001
+python manage.py mcp_server_http --port 8001
+
+# Runs on 0.0.0.0:8001, accessible from anywhere
+# MCP endpoint: http://your-vps-ip:8001/mcp</code></pre>
+      </div>
+
+      <div style="margin-bottom: var(--sx-space-4);">
+        <strong>Friend's Config (uses <code>mcp-remote</code>):</strong>
+        <pre style="background: var(--sx-background); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); padding: var(--sx-space-4); overflow-x: auto; margin: var(--sx-space-2) 0; font-family: var(--sx-font-mono); font-size: var(--sx-text-sm);"><code>{
+  "mcpServers": {
+    "scanx": {
+      "command": "npx",
+      "args": ["mcp-remote", "http://your-vps-ip:8001/mcp"]
+    }
+  }</code></pre>
+        <p style="margin: var(--sx-space-2) 0 0; font-size: var(--sx-text-sm); color: var(--sx-text-secondary);">Requires <code>npm install -g mcp-remote</code> on friend's machine.</p>
+      </div>
+
+      <div style="padding: var(--sx-space-3); background: var(--sx-background); border-radius: var(--sx-radius-control); border-left: 4px solid var(--sx-accent);">
+        <strong style="color: var(--sx-accent);">Quick Steps for Your Friend</strong>
+        <ol style="margin: var(--sx-space-2) 0 0; padding-left: var(--sx-space-5); font-size: var(--sx-text-sm); line-height: 1.8;">
+          <li>Install Node.js if needed: <code>winget install OpenJS.NodeJS</code> (Windows) / <code>brew install node</code> (macOS) / <code>sudo apt install nodejs npm</code> (Linux)</li>
+          <li>Install mcp-remote: <code>npm install -g mcp-remote</code></li>
+          <li>Add the JSON config above to their AI client (opencode, claude code, Cursor, Continue)</li>
+          <li>Restart their AI client</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Available Tools -->
+  <section class="card" style="margin-bottom: var(--sx-space-6);">
+    <div class="card-head">
+      <h2 class="card-title" style="margin: 0;">Available MCP Tools</h2>
+    </div>
+    <div class="card-body">
+      <p style="margin: 0 0 var(--sx-space-4);">Once connected, AI agents can use these tools:</p>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Description</th>
+              <th>Example Prompt</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="table-cell-primary"><code>analyze_attack_surface</code></td>
+              <td>Full attack surface analysis for a domain</td>
+              <td>"Analyze attack surface for eastdelta.edu.bd"</td>
+            </tr>
+            <tr>
+              <td class="table-cell-primary"><code>get_technology_exposure</code></td>
+              <td>Find all subdomains using a specific technology</td>
+              <td>"Find all subdomains using WordPress"</td>
+            </tr>
+            <tr>
+              <td class="table-cell-primary"><code>get_organization_scans</code></td>
+              <td>List all scans for an organization</td>
+              <td>"Show all scans for NASA"</td>
+            </tr>
+            <tr>
+              <td class="table-cell-primary"><code>get_scan_details</code></td>
+              <td>Full scan results (subdomains, HTTP, tech)</td>
+              <td>"Get details for scan UUID..."</td>
+            </tr>
+            <tr>
+              <td class="table-cell-primary"><code>search_subdomains</code></td>
+              <td>Pattern search across subdomains</td>
+              <td>"Find all api.* subdomains"</td>
+            </tr>
+            <tr>
+              <td class="table-cell-primary"><code>create_report</code></td>
+              <td>Generate AI analysis report (saved in Reports)</td>
+              <td>"Generate vulnerability report for scan UUID..."</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Available Resources -->
+  <section class="card" style="margin-bottom: var(--sx-space-6);">
+    <div class="card-head">
+      <h2 class="card-title" style="margin: 0;">Available Resources</h2>
+    </div>
+    <div class="card-body">
+      <p style="margin: 0 0 var(--sx-space-4);">Read-only data resources accessible via MCP:</p>
+      <ul style="margin: 0; padding-left: var(--sx-space-5); line-height: 2;">
+        <li><code>scanx://organizations</code> — All organizations with types</li>
+        <li><code>scanx://scans/recent</code> — 20 most recent scans</li>
+        <li><code>scanx://technologies</code> — All detected technologies</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Reports Section -->
+  <section class="card" style="margin-bottom: var(--sx-space-6);">
+    <div class="card-head">
+      <h2 class="card-title" style="margin: 0;">Viewing Generated Reports</h2>
+    </div>
+    <div class="card-body">
+      <p style="margin: 0 0 var(--sx-space-4);">All AI-generated reports are stored in the <strong>Reports</strong> section (accessible from the sidebar):</p>
+      <ul style="margin: 0; padding-left: var(--sx-space-5); line-height: 2;">
+        <li>Navigate to <strong>Reports</strong> in the sidebar</li>
+        <li>Click <strong>View</strong> to read the full markdown report</li>
+        <li>Click <strong>Download</strong> to save as <code>.md</code> file</li>
+        <li>Reports include: Summary, Analysis, Structured Findings (JSON)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Troubleshooting -->
+  <section class="card" style="margin-top: var(--sx-space-6);">
+    <div class="card-head">
+      <h2 class="card-title" style="margin: 0;">Troubleshooting</h2>
+    </div>
+    <div class="card-body">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--sx-space-4);">
+        <div class="card" style="background: var(--sx-surface-hover); border: 1px solid var(--sx-border);">
+          <div class="card-body" style="padding: var(--sx-space-4);">
+            <h4 style="margin: 0 0 var(--sx-space-2); color: var(--sx-warning);">⚠️ Connection Refused</h4>
+            <ul style="margin: 0; padding-left: var(--sx-space-5); font-size: var(--sx-text-sm); line-height: 1.8;">
+              <li>Check VPS port 8001 open: <code>ufw allow 8001/tcp</code></li>
+              <li>Verify server running: <code>curl http://your-vps-ip:8001/mcp</code></li>
+              <li>Check server logs for errors</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card" style="background: var(--sx-surface-hover); border: 1px solid var(--sx-border);">
+          <div class="card-body" style="padding: var(--sx-space-4);">
+            <h4 style="margin: 0 0 var(--sx-space-2); color: var(--sx-warning);">⚠️ Tools Not Appearing</h4>
+            <ul style="margin: 0; padding-left: var(--sx-space-5); font-size: var(--sx-text-sm); line-height: 1.8;">
+              <li>Restart AI client completely</li>
+              <li>Check MCP server is running</li>
+              <li>Verify config file path is correct</li>
+              <li>Check client logs for errors</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card" style="background: var(--sx-surface-hover); border: 1px solid var(--sx-border);">
+          <div class="card-body" style="padding: var(--sx-space-4);">
+            <h4 style="margin: 0 0 var(--sx-space-2); color: var(--sx-warning);">⚠️ Reports Not Generating</h4>
+            <ul style="margin: 0; padding-left: var(--sx-space-5); font-size: var(--sx-text-sm); line-height: 1.8;">
+              <li>Ensure scan is <strong>completed</strong> status</li>
+              <li>Check scan has <code>httpx_results</code></li>
+              <li>Check Django logs for errors</li>
+              <li>Run tests: <code>python manage.py test</code></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Security Note -->
+  <section class="card" style="margin-top: var(--sx-space-6); border-left: 4px solid var(--sx-warning);">
+    <div class="card-body">
+      <h4 style="margin: 0 0 var(--sx-space-2); color: var(--sx-warning);">⚠️ Security Considerations</h4>
+      <ul style="margin: 0; padding-left: var(--sx-space-5); line-height: 1.8;">
+        <li>The MCP server exposes <strong>all scan data</strong> to connected AI agents</li>
+        <li>For production: Add authentication (API keys), rate limiting, and audit logging</li>
+        <li>Filter sensitive data (internal IPs, credentials) before exposing via MCP</li>
+        <li>Monitor AI agent activity with audit logs</li>
+        <li>Restrict MCP access to authorized users only</li>
+      </ul>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -48,10 +48,8 @@ class AssetsOverviewTests(TestCase):
     def setUp(self):
         self.program = Program.objects.create(
             name="Test Program",
-            title="TP",
             description="A test program",
-            platform=Program.Platform.HACKERONE,
-            program_type=Program.ProgramType.BBP,
+            organization_type=Program.OrganizationType.FINTECH,
         )
         self.scan = Scan.objects.create(
             domain="example.com",
@@ -70,8 +68,7 @@ class AssetsOverviewTests(TestCase):
     def test_returns_expected_keys(self):
         overview = get_assets_overview()
         expected_keys = {
-            "total_programs", "bbp_programs", "vdp_programs", "pentest_programs",
-            "platform_stats", "total_scans", "completed_scans", "running_scans",
+            "total_programs", "total_scans", "completed_scans", "running_scans",
             "failed_scans", "pending_scans", "cancelled_scans", "total_targets",
             "total_subdomains", "live_subdomains", "http_success", "http_failed",
         }
@@ -80,7 +77,6 @@ class AssetsOverviewTests(TestCase):
     def test_counts_are_correct(self):
         overview = get_assets_overview()
         self.assertEqual(overview["total_programs"], 1)
-        self.assertEqual(overview["bbp_programs"], 1)
         self.assertEqual(overview["total_scans"], 1)
         self.assertEqual(overview["completed_scans"], 1)
         self.assertEqual(overview["total_targets"], 1)
@@ -96,8 +92,8 @@ class TechnologyBreakdownTests(TestCase):
     def setUp(self):
         self.program = Program.objects.create(
             name="Test Program",
-            platform=Program.Platform.HACKERONE,
-            program_type=Program.ProgramType.BBP,
+            
+            organization_type=Program.OrganizationType.FINTECH,
         )
         self.scan1 = Scan.objects.create(
             domain="example.com",
@@ -158,8 +154,8 @@ class ProgramStatisticsTests(TestCase):
     def setUp(self):
         self.program = Program.objects.create(
             name="Test Program",
-            platform=Program.Platform.HACKERONE,
-            program_type=Program.ProgramType.BBP,
+            
+            organization_type=Program.OrganizationType.FINTECH,
         )
         self.scan1 = Scan.objects.create(
             domain="example.com",
@@ -217,8 +213,8 @@ class ProgramsWithStatsTests(TestCase):
     def setUp(self):
         self.program = Program.objects.create(
             name="Test Program",
-            platform=Program.Platform.HACKERONE,
-            program_type=Program.ProgramType.BBP,
+            
+            organization_type=Program.OrganizationType.FINTECH,
         )
         Scan.objects.create(
             domain="example.com",
@@ -243,8 +239,8 @@ class TechnologySubdomainsTests(TestCase):
     def setUp(self):
         self.program = Program.objects.create(
             name="Test Program",
-            platform=Program.Platform.HACKERONE,
-            program_type=Program.ProgramType.BBP,
+            
+            organization_type=Program.OrganizationType.FINTECH,
         )
         self.scan1 = Scan.objects.create(
             domain="example.com",
@@ -332,8 +328,8 @@ class NewSubdomainTests(TestCase):
     def setUp(self):
         self.program = Program.objects.create(
             name="Test Program",
-            platform=Program.Platform.HACKERONE,
-            program_type=Program.ProgramType.BBP,
+            
+            organization_type=Program.OrganizationType.FINTECH,
         )
 
     def test_first_scan_all_new(self):

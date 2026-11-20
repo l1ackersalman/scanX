@@ -134,7 +134,7 @@
   <div class="scan-header">
   <div>
     {% if scan.program %}
-    <a href="{% url 'scanner:program_detail' scan.program.id %}" class="btn-ghost" style="margin-top: var(--sx-space-1); padding: var(--sx-space-2) var(--sx-space-4); font-size: var(--sx-text-sm); display: inline-block;">
+    <a href="{% url 'scanner:organization_detail' scan.program.id %}" class="btn-ghost" style="margin-top: var(--sx-space-1); padding: var(--sx-space-2) var(--sx-space-4); font-size: var(--sx-text-sm); display: inline-block;">
       ← Back to {{ scan.program.name }}
     </a>
     {% endif %}
@@ -144,17 +144,10 @@
     </p>
     {% if scan.program %}
     <p style="margin: var(--sx-space-1) 0 0; color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
-      Program: <strong>{{ scan.program.title }}</strong>
+      Organization: <strong>{{ scan.program.name }}</strong>
     </p>
     <p style="margin: var(--sx-space-1) 0 0; color: var(--sx-text-secondary); font-size: var(--sx-text-xs); display: flex; gap: var(--sx-space-2); align-items: center;">
-      <span class="badge badge-info">{{ scan.program.get_platform_display }}</span>
-      {% if scan.program.program_type == "bbp" %}
-      <span class="badge badge-success">BBP</span>
-      {% elif scan.program.program_type == "vdp" %}
-      <span class="badge badge-warning">VDP</span>
-      {% else %}
-      <span class="badge badge-danger">PENTEST</span>
-      {% endif %}
+      <span class="badge badge-info">{{ scan.program.get_organization_type_display }}</span>
     </p>
     {% endif %}
   </div>

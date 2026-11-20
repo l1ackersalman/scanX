@@ -26,7 +26,7 @@
         <div class="stat-value">{{ total_subdomains }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Programs</div>
+        <div class="stat-label">Organizations</div>
         <div class="stat-value">{{ distinct_programs }}</div>
       </div>
       <div class="stat-card">
@@ -51,8 +51,7 @@
             <th>Subdomain</th>
             <th class="table-cell-center">Status Code</th>
             <th>Program</th>
-            <th>Platform</th>
-            <th>Program Type</th>
+            <th>Organization Type</th>
             <th>Scan Date</th>
             <th>Scan Status</th>
           </tr>
@@ -86,23 +85,14 @@
             </td>
             <td class="table-cell-secondary">
               {% if item.program %}
-                <a href="{% url 'scanner:program_detail' item.program.id %}" class="link-primary">{{ item.program.name }}</a>
+                <a href="{% url 'scanner:organization_detail' item.program.id %}" class="link-primary">{{ item.program.name }}</a>
               {% else %}
                 <span class="text-secondary">—</span>
               {% endif %}
             </td>
             <td class="table-cell-secondary">
               {% if item.program %}
-                {{ item.program.get_platform_display }}
-              {% else %}
-                <span class="text-secondary">—</span>
-              {% endif %}
-            </td>
-            <td class="table-cell-secondary">
-              {% if item.program %}
-                {% if item.program.program_type == "bbp" %}BBP
-                {% elif item.program.program_type == "vdp" %}VDP
-                {% else %}PENTEST{% endif %}
+                {{ item.program.get_organization_type_display }}
               {% else %}
                 <span class="text-secondary">—</span>
               {% endif %}

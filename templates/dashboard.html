@@ -74,7 +74,7 @@
   .scan-form-inline {
     display: grid;
     grid-template-columns: 1fr 1fr auto;
-    align-items: end;
+    align-items: start;
     gap: var(--sx-space-3);
   }
 
@@ -86,10 +86,11 @@
 
   .scan-form-group {
     min-width: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .scan-form-group .form-label {
-    display: block;
     font-size: var(--sx-text-sm);
     font-weight: 500;
     color: var(--sx-text-primary);
@@ -97,10 +98,18 @@
   }
 
   .scan-form-group .form-input,
+  .scan-form-group .form-input:focus,
   .scan-form-group select.form-input {
     height: 40px;
     padding: var(--sx-space-2) var(--sx-space-3);
     font-size: var(--sx-text-sm);
+    flex: 1;
+  }
+
+  .scan-form-group .form-text {
+    margin-top: var(--sx-space-1);
+    font-size: var(--sx-text-xs);
+    color: var(--sx-text-secondary);
   }
 
   .scan-btn-primary {
@@ -112,6 +121,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    margin-top: 22px;
   }
 
   /* Workflow Section */
@@ -265,30 +275,71 @@
     <div class="scan-panel-header">
       <h2 id="scan-panel-title" class="scan-panel-title">New Scan</h2>
     </div>
+    {% if not programs %}
+      <div class="message message-warning" style="margin-bottom: var(--sx-space-4);">
+        <strong>⚠ No organizations found.</strong> Please <a href="{% url 'scanner:organizations_add' %}" class="link-primary">add an organization</a> before starting a scan.
+      </div>
+    {% endif %}
     <form method="post" action="{% url 'scanner:start_scan' %}" novalidate id="new-scan-form" class="scan-form-inline">
       {% csrf_token %}
       <div class="scan-form-group">
         <label for="id_domain" class="form-label">Target Domain</label>
         <input type="text" id="id_domain" name="domain" class="form-input"
                required autocomplete="off"
+               value="{{ domain|default:'' }}"
                placeholder="example.com"
                pattern="^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
                title="Enter a valid domain name">
         <small class="form-text">Enter the target domain for reconnaissance.</small>
+        {% if domain_error %}
+          <small class="form-text form-error" style="color: var(--sx-danger); margin-top: var(--sx-space-1); display: block;">{{ domain_error }}</small>
+        {% endif %}
       </div>
       <div class="scan-form-group">
-        <label for="id_program" class="form-label">Program <span class="text-danger">*</span></label>
+        <label for="id_program" class="form-label">Organization <span class="text-danger">*</span></label>
         <select id="id_program" name="program" class="form-input" required>
-          <option value="">Select a program</option>
+          <option value="">Select an Organization</option>
           {% for program in programs %}
-            <option value="{{ program.id }}">{% if program.title %}{{ program.title }}{% else %}{{ program.name }}{% endif %} ({{ program.get_platform_display }} · {{ program.program_type|upper }})</option>
+            <option value="{{ program.id }}"{% if program.id|stringformat:"s" == program_id %} selected{% endif %}>{{ program.name }} ({{ program.get_organization_type_display }})</option>
           {% endfor %}
         </select>
+        {% if program_error %}
+          <small class="form-text form-error" style="color: var(--sx-danger); margin-top: var(--sx-space-1); display: block;">{{ program_error }}</small>
+        {% endif %}
       </div>
       <button type="submit" class="btn-primary scan-btn-primary">
         Start Scan
       </button>
     </form>
+  </section>
+
+  <!-- MCP HTTP Server Status -->
+  <section class="mcp-status-section" aria-labelledby="mcp-status-title" style="margin-bottom: var(--sx-space-6);">
+    <div class="card">
+      <div class="card-head" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sx-space-3);">
+        <h2 id="mcp-status-title" class="card-title" style="margin: 0;">MCP Server Status</h2>
+        <div id="mcp-status-display" style="display: flex; align-items: center; gap: var(--sx-space-3);">
+          <span id="mcp-status-indicator" class="status-badge status-unknown" style="display: inline-flex; align-items: center; gap: var(--sx-space-1);">Checking...</span>
+          <span id="mcp-status-url" class="text-secondary" style="font-size: var(--sx-text-sm); display: none;"></span>
+        </div>
+      </div>
+      <div class="card-body" style="padding: var(--sx-space-4);">
+        <div id="mcp-status-content" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--sx-space-3);">
+          <div id="mcp-stopped-state" style="display: none;">
+            <p style="margin: 0; color: var(--sx-text-secondary);">MCP HTTP server is not running.</p>
+            <button id="mcp-start-btn" class="btn-primary" onclick="startMcpHttpServer()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: var(--sx-space-2);"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              Start MCP HTTP Server
+            </button>
+          </div>
+          <div id="mcp-running-state" style="display: none;">
+            <span class="status-badge status-running" style="display: inline-flex; align-items: center; gap: var(--sx-space-1);">Running on port 8001</span>
+            <span id="mcp-url-display" class="text-secondary" style="font-family: var(--sx-font-mono); font-size: var(--sx-text-sm);"></span>
+            <button id="mcp-copy-btn" class="btn-ghost btn-sm" onclick="copyMcpUrl()" style="margin-left: var(--sx-space-2);">Copy URL</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ScanX Workflow -->
@@ -337,4 +388,110 @@
     <p class="mission-text">"Identify security weaknesses before attackers exploit them."</p>
   </section>
 </div>
+
+  <script>
+    // MCP HTTP Server Status
+    async function checkMcpHttpStatus() {
+      try {
+        const res = await fetch('{% url "scanner:mcp_http_status" %}', {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+        updateMcpStatusDisplay(data);
+      } catch (e) {
+        console.error('Failed to check MCP status:', e);
+      }
+    }
+
+    function updateMcpStatusDisplay(data) {
+      const indicator = document.getElementById('mcp-status-indicator');
+      const urlDisplay = document.getElementById('mcp-status-url');
+      const stoppedState = document.getElementById('mcp-stopped-state');
+      const runningState = document.getElementById('mcp-running-state');
+      const urlDisplay2 = document.getElementById('mcp-url-display');
+
+      if (data.running) {
+        document.getElementById('mcp-status-indicator').textContent = 'Running';
+        document.getElementById('mcp-status-indicator').className = 'status-badge status-running';
+        if (urlDisplay) {
+          urlDisplay.textContent = data.url;
+          urlDisplay.style.display = 'inline';
+        }
+        if (urlDisplay2) urlDisplay2.textContent = data.url;
+        if (stoppedState) stoppedState.style.display = 'none';
+        if (runningState) runningState.style.display = 'flex';
+      } else {
+        document.getElementById('mcp-status-indicator').textContent = 'Stopped';
+        document.getElementById('mcp-status-indicator').className = 'status-badge status-failed';
+        if (urlDisplay) urlDisplay.style.display = 'none';
+        if (stoppedState) stoppedState.style.display = 'flex';
+        if (runningState) runningState.style.display = 'none';
+      }
+    }
+
+    async function startMcpHttpServer() {
+      const btn = document.getElementById('mcp-start-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: var(--sx-space-2);"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>Starting...';
+      }
+
+      try {
+        const res = await fetch('{% url "scanner:mcp_http_start" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+          }
+        });
+        const data = await res.json();
+        
+        if (data.status === 'already_running') {
+          alert('MCP HTTP server is already running');
+        } else if (data.status === 'starting') {
+          // Poll for status
+          let attempts = 0;
+          const poll = setInterval(async () => {
+            if (attempts >= 10) {
+              clearInterval(poll);
+              return;
+            }
+            try {
+              const res = await fetch('{% url "scanner:mcp_http_status" %}');
+              const data = await res.json();
+              if (data.running) {
+                clearInterval(poll);
+                updateMcpStatusDisplay(data);
+              }
+            } catch (e) {}
+            attempts++;
+          }, 1000);
+        }
+      } catch (e) {
+        console.error('Failed to start MCP server:', e);
+        alert('Failed to start MCP server: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: var(--sx-space-2);"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Start MCP HTTP Server';
+        }
+      }
+    }
+
+    function copyMcpUrl() {
+      const urlDisplay = document.getElementById('mcp-url-display');
+      if (urlDisplay && urlDisplay.textContent) {
+        navigator.clipboard.writeText(urlDisplay.textContent).then(() => {
+          alert('MCP URL copied to clipboard!');
+        });
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      checkMcpHttpStatus();
+      // Poll every 30 seconds
+      setInterval(checkMcpHttpStatus, 30000);
+    });
+  </script>
 {% endblock %}

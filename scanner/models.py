@@ -143,34 +143,105 @@ class Scan(models.Model):
 
 class Program(models.Model):
     """
-    Authorized target program for reconnaissance.
+    Authorized target organization for reconnaissance.
     """
 
-    class Platform(models.TextChoices):
-        HACKERONE = "hackerone", "HackerOne"
-        BUG_CROWD = "bugcrowd", "Bugcrowd"
-        INTIGRITI = "intigriti", "Intigriti"
-        SYNACK = "synack", "Synack"
-        SELF = "self", "Self"
-
-    class ProgramType(models.TextChoices):
-        BBP = "bbp", "Bug Bounty Program"
-        VDP = "vdp", "Vulnerability Disclosure Program"
-        PENTEST = "pentest", "Pentest"
+    class OrganizationType(models.TextChoices):
+        FINTECH = "fintech", "Fintech"
+        AGRICULTURE = "agriculture", "Agriculture"
+        RESEARCH = "research", "Research"
+        EDUCATION = "education", "Education"
+        HEALTHCARE = "healthcare", "Healthcare"
+        GOVERNMENT = "government", "Government"
+        RETAIL = "retail", "Retail"
+        MANUFACTURING = "manufacturing", "Manufacturing"
+        TECHNOLOGY = "technology", "Technology"
+        ENERGY = "energy", "Energy"
+        TELECOMMUNICATIONS = "telecommunications", "Telecommunications"
+        TRANSPORTATION = "transportation", "Transportation"
+        MEDIA = "media", "Media"
+        HOSPITALITY = "hospitality", "Hospitality"
+        REAL_ESTATE = "real_estate", "Real Estate"
+        CONSULTING = "consulting", "Consulting"
+        NON_PROFIT = "non_profit", "Non-Profit"
+        OTHER = "other", "Other"
 
     name = models.CharField(max_length=255, help_text="Authorized target domain or organization name")
-    title = models.CharField(max_length=100, blank=True, default="", help_text="Short display title (e.g. EDU, NEW)")
-    description = models.TextField(blank=True, default="", help_text="Program description (e.g. Let it empty for future)")
-    platform = models.CharField(max_length=50, choices=Platform.choices)
-    program_type = models.CharField(max_length=50, choices=ProgramType.choices)
+    description = models.TextField(blank=True, default="", help_text="Organization description (e.g. Let it empty for future)")
+    organization_type = models.CharField(max_length=50, choices=OrganizationType.choices, default=OrganizationType.OTHER)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["platform"]),
-            models.Index(fields=["program_type"]),
+            models.Index(fields=["organization_type"]),
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.platform})"
+        return f"{self.name}"
+
+
+class Report(models.Model):
+    """
+    AI-generated analysis reports for scans.
+    """
+    
+    class ReportType(models.TextChoices):
+        ATTACK_SURFACE = "attack_surface", "Attack Surface Analysis"
+        VULNERABILITY = "vulnerability", "Vulnerability Assessment"
+        TECHNOLOGY_EXPOSURE = "technology_exposure", "Technology Exposure"
+        ATTACK_VECTOR = "attack_vector", "Attack Vector Analysis"
+        CUSTOM = "custom", "Custom Analysis"
+    
+    class Status(models.TextChoices):
+        GENERATING = "generating", "Generating"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    scan = models.ForeignKey(
+        Scan,
+        on_delete=models.CASCADE,
+        related_name='reports',
+    )
+    report_type = models.CharField(
+        max_length=50,
+        choices=ReportType.choices,
+        default=ReportType.ATTACK_SURFACE,
+    )
+    title = models.CharField(max_length=255)
+    summary = models.TextField(blank=True, default="")
+    content = models.TextField(blank=True, default="")  # Markdown content
+    findings = models.JSONField(default=dict, blank=True)  # Structured findings
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.GENERATING,
+        db_index=True,
+    )
+    generated_by = models.CharField(max_length=100, default="MCP Agent")  # AI agent identifier
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["scan", "-created_at"]),
+            models.Index(fields=["status", "-created_at"]),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} ({self.get_report_type_display()})"
+    
+    def mark_completed(self, content: str, findings: dict = None):
+        self.status = self.Status.COMPLETED
+        self.completed_at = timezone.now()
+        self.content = content
+        if findings:
+            self.findings = findings
+        self.save()
+    
+    def mark_failed(self, error: str):
+        self.status = self.Status.FAILED
+        self.content = f"Generation failed: {error}"
+        self.save()
