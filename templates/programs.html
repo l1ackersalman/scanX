@@ -3,7 +3,8 @@
 {% block title %}Programs — scanX{% endblock %}
 
 {% block content %}
-<div class="page-banner">
+<div class="content-wrapper">
+  <div class="page-banner">
   <h1>Programs</h1>
   <p>Authorized bug bounty and disclosure programs with scope configuration and scan history.</p>
 </div>
@@ -66,4 +67,5 @@
     <a href="{% url 'scanner:programs_add' %}" class="btn-primary" style="margin-top: var(--sx-space-4); display: inline-block;">Add Program</a>
   </div>
 {% endif %}
+</div>
 {% endblock %}

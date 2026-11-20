@@ -3,142 +3,338 @@
 
 {% block title %}Dashboard — scanX{% endblock %}
 
-{% block content %}
-<div class="page-banner">
-  <h1>Dashboard</h1>
-  <p>Start new reconnaissance scans and monitor active scans.</p>
-</div>
+{% block extra_css %}
+<style>
+  /* =====================================================================
+     Dashboard — Viewport-optimized Layout
+     ===================================================================== */
 
-<div class="dashboard-grid">
-  <!-- Scan Form Card -->
-  <section class="card scan-form" aria-labelledby="scan-form-title">
-    <div class="card-head" style="display: flex; align-items: center; justify-content: space-between;">
-      <h2 id="scan-form-title" class="card-title">New Scan</h2>
-      <button type="submit" form="new-scan-form" class="btn-primary">
+  /* Main content wrapper: use full viewport height */
+  .content-wrapper {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto auto auto auto;
+    gap: var(--sx-space-4);
+    padding: var(--sx-space-4) var(--sx-space-6);
+    box-sizing: border-box;
+  }
+
+  /* Hero Section — compact */
+  .hero-section {
+    margin: 0;
+    padding: var(--sx-space-2) 0 0;
+  }
+
+  .hero-content {
+    max-width: 800px;
+  }
+
+  .hero-title {
+    font-size: clamp(var(--sx-text-xl), 3vw, var(--sx-text-2xl));
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--sx-text-primary);
+    margin: 0 0 var(--sx-space-2) 0;
+  }
+
+  .hero-title .accent {
+    color: var(--sx-accent);
+  }
+
+  .hero-subtitle {
+    font-size: var(--sx-text-base);
+    line-height: 1.5;
+    color: var(--sx-text-secondary);
+    margin: 0;
+    max-width: 640px;
+  }
+
+  /* Scan Panel — compact */
+  .scan-panel {
+    background: var(--sx-surface);
+    border: 1px solid var(--sx-border);
+    border-radius: var(--sx-radius-card);
+    padding: var(--sx-space-4);
+    margin: 0;
+  }
+
+  .scan-panel-header {
+    margin-bottom: var(--sx-space-3);
+  }
+
+  .scan-panel-title {
+    font-size: var(--sx-text-base);
+    font-weight: 600;
+    color: var(--sx-text-primary);
+    margin: 0;
+  }
+
+  .scan-form-inline {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+    gap: var(--sx-space-3);
+  }
+
+  @media (max-width: 900px) {
+    .scan-form-inline {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .scan-form-group {
+    min-width: 0;
+  }
+
+  .scan-form-group .form-label {
+    display: block;
+    font-size: var(--sx-text-sm);
+    font-weight: 500;
+    color: var(--sx-text-primary);
+    margin-bottom: var(--sx-space-1);
+  }
+
+  .scan-form-group .form-input,
+  .scan-form-group select.form-input {
+    height: 40px;
+    padding: var(--sx-space-2) var(--sx-space-3);
+    font-size: var(--sx-text-sm);
+  }
+
+  .scan-btn-primary {
+    height: 40px;
+    padding: var(--sx-space-2) var(--sx-space-4);
+    font-size: var(--sx-text-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Workflow Section */
+  .workflow-section {
+    margin: 0;
+  }
+
+  .workflow-header {
+    margin-bottom: var(--sx-space-3);
+  }
+
+  .workflow-title {
+    font-size: var(--sx-text-lg);
+    font-weight: 600;
+    color: var(--sx-text-primary);
+    margin: 0 0 var(--sx-space-1);
+  }
+
+  .workflow-subtitle {
+    font-size: var(--sx-text-sm);
+    color: var(--sx-text-secondary);
+    margin: 0;
+  }
+
+  .workflow-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sx-space-3);
+  }
+
+  @media (max-width: 1024px) {
+    .workflow-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .workflow-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .workflow-card {
+    background: var(--sx-surface);
+    border: 1px solid var(--sx-border);
+    border-radius: var(--sx-radius-card);
+    padding: var(--sx-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sx-space-2);
+    transition: border var(--sx-transition), box-shadow var(--sx-transition);
+    height: 100%;
+    min-height: 140px;
+  }
+
+  .workflow-card:hover {
+    border-color: var(--sx-accent);
+    box-shadow: var(--sx-shadow);
+  }
+
+  .workflow-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--sx-radius-pill);
+    background: var(--sx-accent);
+    color: var(--sx-background);
+    font-size: var(--sx-text-xs);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .workflow-card-title {
+    font-size: var(--sx-text-sm);
+    font-weight: 600;
+    color: var(--sx-text-primary);
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .workflow-card-desc {
+    font-size: var(--sx-text-xs);
+    color: var(--sx-text-secondary);
+    line-height: 1.45;
+    margin: 0;
+    flex: 1;
+  }
+
+  /* Mission Statement — compact */
+  .mission-section {
+    background: linear-gradient(135deg, rgba(118, 185, 0, 0.08) 0%, rgba(118, 185, 0, 0.02) 100%);
+    border: 1px solid rgba(118, 185, 0, 0.2);
+    border-radius: var(--sx-radius-card);
+    padding: var(--sx-space-4) var(--sx-space-5);
+    text-align: center;
+    margin: 0;
+  }
+
+  .mission-tagline {
+    font-size: var(--sx-text-lg);
+    font-weight: 600;
+    color: var(--sx-accent);
+    letter-spacing: 0.02em;
+    margin: 0 0 var(--sx-space-2);
+  }
+
+  .mission-text {
+    font-size: var(--sx-text-base);
+    font-weight: 500;
+    color: var(--sx-text-primary);
+    line-height: 1.4;
+    margin: 0;
+    font-style: italic;
+  }
+
+  /* Responsive: allow scrolling on small screens */
+  @media (max-height: 720px) {
+    .content-wrapper {
+      min-height: auto;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .content-wrapper {
+      grid-template-rows: auto auto auto auto;
+      gap: var(--sx-space-3);
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+  <!-- Hero Section -->
+  <section class="hero-section" aria-labelledby="hero-title">
+    <div class="hero-content">
+      <h1 id="hero-title" class="hero-title">
+        Discover Your Attack Surface.<br>
+        <span class="accent">Stay Ahead of Threats.</span>
+      </h1>
+      <p class="hero-subtitle">
+        AI-powered infrastructure monitoring and vulnerability assessment to help organizations identify and prioritize security weaknesses.
+      </p>
+    </div>
+  </section>
+
+  <!-- Scan Panel -->
+  <section class="scan-panel" aria-labelledby="scan-panel-title">
+    <div class="scan-panel-header">
+      <h2 id="scan-panel-title" class="scan-panel-title">New Scan</h2>
+    </div>
+    <form method="post" action="{% url 'scanner:start_scan' %}" novalidate id="new-scan-form" class="scan-form-inline">
+      {% csrf_token %}
+      <div class="scan-form-group">
+        <label for="id_domain" class="form-label">Target Domain</label>
+        <input type="text" id="id_domain" name="domain" class="form-input"
+               required autocomplete="off"
+               placeholder="example.com"
+               pattern="^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
+               title="Enter a valid domain name">
+        <small class="form-text">Enter the target domain for reconnaissance.</small>
+      </div>
+      <div class="scan-form-group">
+        <label for="id_program" class="form-label">Program <span class="text-danger">*</span></label>
+        <select id="id_program" name="program" class="form-input" required>
+          <option value="">Select a program</option>
+          {% for program in programs %}
+            <option value="{{ program.id }}">{% if program.title %}{{ program.title }}{% else %}{{ program.name }}{% endif %} ({{ program.get_platform_display }} · {{ program.program_type|upper }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn-primary scan-btn-primary">
         Start Scan
       </button>
-    </div>
-    <form method="post" action="{% url 'scanner:start_scan' %}" novalidate id="new-scan-form">
-      {% csrf_token %}
-      <div class="card-body">
-        <div class="form-group">
-          <label for="id_domain" class="form-label">Target Domain</label>
-          <input type="text" id="id_domain" name="domain" class="form-input"
-                 required autocomplete="off"
-                 pattern="^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
-                 title="Enter a valid domain name">
-          <small class="form-text">Enter the target domain for reconnaissance.</small>
-        </div>
-
-        <div class="form-group">
-          <label for="id_program" class="form-label">Program <span class="text-danger">*</span></label>
-          <select id="id_program" name="program" class="form-input" required>
-            <option value="">Select a program</option>
-            {% for program in programs %}
-              <option value="{{ program.id }}">{% if program.title %}{{ program.title }}{% else %}{{ program.name }}{% endif %} ({{ program.get_platform_display }} · {{ program.program_type|upper }})</option>
-            {% endfor %}
-          </select>
-          <small class="form-text">Select an authorized program for this scan.</small>
-        </div>
-      </div>
     </form>
   </section>
 
-  <!-- Recent Scans Card -->
-  <section class="card" aria-labelledby="recent-scans-title">
-    <div class="card-head">
-      <h2 id="recent-scans-title" class="card-title" style="margin: 0;">Recent Scans</h2>
+  <!-- ScanX Workflow -->
+  <section class="workflow-section" aria-labelledby="workflow-title">
+    <div class="workflow-header">
+      <h2 id="workflow-title" class="workflow-title">ScanX Workflow</h2>
+      <p class="workflow-subtitle">Six stages of automated security assessment</p>
     </div>
-    <div class="card-body" style="padding: 0;">
-      {% if scans %}
-        <div class="table-wrap">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Domain</th>
-                <th>Status</th>
-                <th>Program</th>
-                <th>Platform</th>
-                <th>Started</th>
-                <th>Duration</th>
-                <th>Results</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for scan in scans %}
-              <tr class="table-row">
-                <td class="table-cell-mono table-cell-url">
-                  <a href="{% url 'scanner:scan_detail' scan.id %}" class="link-primary">{{ scan.domain }}</a>
-                </td>
-                <td>
-                  <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
-                </td>
-                <td class="table-cell-secondary">
-                  {% if scan.program %}
-                    <a href="{% url 'scanner:program_detail' scan.program.id %}" class="link-primary">{{ scan.program.name }}</a>
-                  {% else %}
-                    <span class="text-secondary">—</span>
-                  {% endif %}
-                </td>
-                <td class="table-cell-secondary">
-                  {% if scan.program %}
-                    {{ scan.program.get_platform_display }} · 
-                    {% if scan.program.program_type == "bbp" %}BBP
-                    {% elif scan.program.program_type == "vdp" %}VDP
-                    {% else %}PENTEST{% endif %}
-                  {% else %}
-                    —
-                  {% endif %}
-                </td>
-                <td class="table-cell-secondary">
-                  {% if scan.started_at %}{{ scan.started_at|date:"M d, h:i A" }}{% else %}—{% endif %}
-                </td>
-                <td class="table-cell-mono">
-                  {{ scan.duration_display }}
-                </td>
-                <td class="table-cell-secondary">
-                  {% if scan.total_subdomains %}
-                    {{ scan.total_subdomains }} subdomains · {{ scan.live_subdomains }} live · {{ scan.http_success }} OK
-                  {% else %}—{% endif %}
-                </td>
-                <td class="table-cell-center">
-                  {% if scan.status != "cancelled" %}
-                  <a href="{% url 'scanner:scan_detail' scan.id %}" class="btn-ghost btn-sm">View</a>
-                  {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+    <div class="workflow-grid" role="list" aria-label="ScanX Workflow">
+      <article class="workflow-card" role="listitem">
+        <span class="workflow-number">1</span>
+        <h3 class="workflow-card-title">Asset Discovery</h3>
+        <p class="workflow-card-desc">Continuous enumeration of subdomains, DNS records, and exposed services across the external attack surface.</p>
+      </article>
+      <article class="workflow-card" role="listitem">
+        <span class="workflow-number">2</span>
+        <h3 class="workflow-card-title">Technology Fingerprinting</h3>
+        <p class="workflow-card-desc">Identification of web technologies, frameworks, servers, and configurations through HTTP probing and analysis.</p>
+      </article>
+      <article class="workflow-card" role="listitem">
+        <span class="workflow-number">3</span>
+        <h3 class="workflow-card-title">Security Intelligence</h3>
+        <p class="workflow-card-desc">Aggregation of threat intelligence, CVE data, and vulnerability feeds relevant to discovered assets.</p>
+      </article>
+      <article class="workflow-card" role="listitem">
+        <span class="workflow-number">4</span>
+        <h3 class="workflow-card-title">AI-Assisted Investigation</h3>
+        <p class="workflow-card-desc">Autonomous agentic workflows analyze findings, correlate data, and simulate attack paths.</p>
+      </article>
+      <article class="workflow-card" role="listitem">
+        <span class="workflow-number">5</span>
+        <h3 class="workflow-card-title">Risk Prioritization</h3>
+        <p class="workflow-card-desc">Context-aware scoring combines exploitability, business impact, and threat context for actionable prioritization.</p>
+      </article>
+      <article class="workflow-card" role="listitem">
+        <span class="workflow-number">6</span>
+        <h3 class="workflow-card-title">Reporting & Alerting</h3>
+        <p class="workflow-card-desc">Executive summaries, technical findings, and real-time alerts delivered via dashboard and integrations.</p>
+      </article>
+    </div>
+  </section>
 
-        <!-- Pagination -->
-        {% if scans.has_other_pages %}
-        <div class="pagination pagination-sm">
-          <div class="info">Page {{ scans.number }} of {{ scans.paginator.num_pages }}</div>
-          <div class="controls">
-            {% if scans.has_previous %}
-              <a href="?page={{ scans.previous_page_number }}" class="btn-ghost btn-sm">‹ Prev</a>
-            {% else %}
-              <button class="btn-ghost btn-sm" disabled>‹ Prev</button>
-            {% endif %}
-            {% if scans.has_next %}
-              <a href="?page={{ scans.next_page_number }}" class="btn-ghost btn-sm">Next ›</a>
-            {% else %}
-              <button class="btn-ghost btn-sm" disabled>Next ›</button>
-            {% endif %}
-          </div>
-        </div>
-        {% endif %}
-      {% else %}
-        <div class="empty-state empty-state-lg">
-          <div class="icon">🔍</div>
-          <h2>No scans yet</h2>
-          <p>Start your first reconnaissance scan using the form on the left.</p>
-        </div>
-      {% endif %}
-    </div>
+  <!-- Mission Statement -->
+  <section class="mission-section" aria-labelledby="mission-title">
+    <p class="mission-tagline" id="mission-title">Discover. Analyze. Prioritize. Protect.</p>
+    <p class="mission-text">"Identify security weaknesses before attackers exploit them."</p>
   </section>
 </div>
 {% endblock %}

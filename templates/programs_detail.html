@@ -3,7 +3,8 @@
 {% block title %}{{ program.name }} — scanX{% endblock %}
 
 {% block content %}
-<div class="page-banner">
+<div class="content-wrapper">
+  <div class="page-banner">
   <h1>{{ program.name }}</h1>
   <p style="margin: var(--sx-space-1) 0 0; color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
     {{ program.description }}
@@ -176,4 +177,5 @@
     {% endif %}
   </div>
 </section>
+</div>
 {% endblock %}

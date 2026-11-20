@@ -11,34 +11,112 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/scanx.css' %}?v=11">
+  <link rel="stylesheet" href="{% static 'css/scanx.css' %}?v=13">
   {% block extra_css %}{% endblock %}
 </head>
 <body>
   <a href="#main-content" class="sr-only-skip">Skip to main content</a>
 
   <div class="app">
-    <!-- Header / App Bar -->
-    <header class="app-bar">
-      <div class="bar-inner">
-        <div class="brand">
-          <img src="{% static 'images/scanx-logo.png' %}" alt="scanX Logo" class="brand-mark">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="sidebar-inner">
+        <!-- Brand -->
+        <div class="sidebar-brand">
+          <a href="{% url 'scanner:dashboard' %}" class="brand-link" aria-label="scanX Home">
+            <img src="{% static 'images/scanx-logo.png' %}" alt="scanX Logo" class="brand-mark">
+          </a>
         </div>
-        <nav class="nav" aria-label="Main navigation">
-          <a href="{% url 'scanner:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
-          <a href="{% url 'scanner:programs' %}" {% if request.resolver_match.url_name == 'programs' %}aria-current="page"{% endif %}>Programs</a>
-          <a href="{% url 'scanner:history' %}" {% if request.resolver_match.url_name == 'history' %}aria-current="page"{% endif %}>History</a>
-          <a href="{% url 'scanner:assets' %}" {% if request.resolver_match.url_name == 'assets' %}aria-current="page"{% endif %}>Assets</a>
-          <span class="nav-placeholder">Reports</span>
-          <span class="nav-placeholder">Settings</span>
+
+        <!-- Workspace Navigation -->
+        <nav class="sidebar-nav" aria-label="Workspace navigation">
+          <div class="nav-section">
+            <span class="nav-section-label">Workspace</span>
+            <ul class="nav-list" role="list">
+              <li class="nav-item">
+                <a href="{% url 'scanner:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" aria-current="{% if request.resolver_match.url_name == 'dashboard' %}page{% endif %}">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                  <span class="nav-label">Overview</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'scanner:programs' %}" class="nav-link {% if request.resolver_match.url_name == 'programs' %}active{% endif %}" aria-current="{% if request.resolver_match.url_name == 'programs' %}page{% endif %}">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  <span class="nav-label">Targets</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'scanner:history' %}" class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}" aria-current="{% if request.resolver_match.url_name == 'history' %}page{% endif %}">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><path d="M12 6v6l-4 2"/></svg>
+                  <span class="nav-label">Scan History</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'scanner:assets' %}" class="nav-link {% if request.resolver_match.url_name == 'assets' %}active{% endif %}" aria-current="{% if request.resolver_match.url_name == 'assets' %}page{% endif %}">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <span class="nav-label">Assets</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link disabled">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                  <span class="nav-label">Reports</span>
+                </a>
+              </li>
+            </ul>
+          </div>
         </nav>
-        <div class="actions">
-          <button class="btn-icon" title="Theme" aria-label="Toggle theme" id="themeToggle">🌓</button>
+
+        <!-- Bottom Navigation -->
+        <div class="sidebar-bottom">
+          <nav class="sidebar-nav" aria-label="Settings navigation">
+            <ul class="nav-list" role="list">
+              <li class="nav-item">
+                <a href="#" class="nav-link disabled">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>
+                  <span class="nav-label">Settings</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+
+          <!-- Theme Toggle in Sidebar -->
+          <div class="sidebar-theme">
+            <button class="theme-toggle-sidebar" id="themeToggleSidebar" title="Toggle theme" aria-label="Toggle theme">
+              <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+          </div>
         </div>
+      </div>
+    </aside>
+
+    <!-- Mobile sidebar overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+    <!-- Mobile header bar -->
+    <header class="mobile-header" id="mobileHeader" role="banner">
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="mobile-brand">
+        <a href="{% url 'scanner:dashboard' %}" class="brand-link" aria-label="scanX Home">
+          <img src="{% static 'images/scanx-logo.png' %}" alt="scanX Logo" class="brand-mark">
+        </a>
+      </div>
+      <div class="mobile-actions">
+        <button class="theme-toggle-mobile" id="themeToggleMobile" title="Toggle theme" aria-label="Toggle theme">
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
       </div>
     </header>
 
-    <main class="content" id="main-content" role="main">
+    <main class="main-content" id="main-content" role="main">
       {% if messages %}
         <div class="messages" role="alert" aria-live="polite">
           {% for message in messages %}
@@ -53,7 +131,7 @@
     </main>
   </div>
 
-  <script src="{% static 'js/scanx.js' %}?v=3"></script>
+  <script src="{% static 'js/scanx.js' %}?v=5"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

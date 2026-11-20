@@ -130,7 +130,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="scan-header">
+<div class="content-wrapper">
+  <div class="scan-header">
   <div>
     {% if scan.program %}
     <a href="{% url 'scanner:program_detail' scan.program.id %}" class="btn-ghost" style="margin-top: var(--sx-space-1); padding: var(--sx-space-2) var(--sx-space-4); font-size: var(--sx-text-sm); display: inline-block;">
@@ -395,6 +396,7 @@
     </section>
         {% endif %}
   </aside>
+</div>
 </div>
 {% endblock %}
 

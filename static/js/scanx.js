@@ -6,9 +6,8 @@
   'use strict';
 
   // =====================================================================
-  // Theme Toggle
+  // Theme Toggle (shared)
   // =====================================================================
-  const themeToggle = document.getElementById('themeToggle');
   const THEME_KEY = 'sx-theme';
 
   function applyTheme(theme) {
@@ -27,12 +26,61 @@
     applyTheme(initial);
   }
 
-  if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
+  function setupThemeToggle(toggle) {
+    if (!toggle) return;
+    toggle.addEventListener('click', () => {
       const isLight = document.documentElement.getAttribute('data-theme') === 'light';
       applyTheme(isLight ? 'dark' : 'light');
     });
-    initTheme();
+  }
+
+  // Initialize theme and setup all toggles
+  initTheme();
+  setupThemeToggle(document.getElementById('themeToggle'));
+  setupThemeToggle(document.getElementById('themeToggleSidebar'));
+  setupThemeToggle(document.getElementById('themeToggleMobile'));
+
+  // =====================================================================
+  // Mobile Sidebar Toggle
+  // =====================================================================
+  function initMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+
+    if (!sidebar || !overlay || !menuBtn) return;
+
+    function openSidebar() {
+      sidebar.classList.add('open');
+      overlay.classList.add('visible');
+      menuBtn.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('visible');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+
+    function toggleSidebar() {
+      if (sidebar.classList.contains('open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    }
+
+    menuBtn.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+        closeSidebar();
+      }
+    });
   }
 
   // =====================================================================
@@ -344,7 +392,7 @@
   // Initialize on DOM Ready
   // =====================================================================
   document.addEventListener('DOMContentLoaded', () => {
-    initTheme();
+    initMobileSidebar();
     initLogStream();
     initForms();
     initCopyButtons();

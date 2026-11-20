@@ -3,7 +3,8 @@
 {% block title %}{{ technology }} — scanX{% endblock %}
 
 {% block content %}
-<div class="page-banner">
+<div class="content-wrapper">
+  <div class="page-banner">
   <a href="{% url 'scanner:assets' %}" class="btn-ghost" style="padding: var(--sx-space-2) var(--sx-space-4); font-size: var(--sx-text-sm); display: inline-block;">← Back to Technologies</a>
   <h1>Technology: {{ technology }}</h1>
   <p>Subdomains using <strong>{{ technology }}</strong>, grouped by authorized program.</p>
@@ -149,4 +150,5 @@
     {% endif %}
   </div>
 </section>
+</div>
 {% endblock %}
