@@ -78,7 +78,7 @@ echo "[✔] Checking IP & CNAME records..."
 dnsx -l alldomains.txt -silent -o live.txt > /dev/null 2>&1
 echo "[✔] Final Evalution..."
 
-/home/insomniax/go/bin/httpx -sc -title -tech-detect -ip -cname -probe -silent -json -o httpx.json -l live.txt > /dev/null 2>&1
+"$HOME/go/bin/httpx" -sc -title -tech-detect -ip -cname -probe -silent -json -o httpx.json -l live.txt > /dev/null 2>&1
 
 # ========================[ FINISH ]========================
 

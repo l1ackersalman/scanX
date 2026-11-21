@@ -3,20 +3,17 @@ scanX Scanner Views
 
 Dashboard, scan initiation, live logs, and scan history.
 """
-"""
-scanX Scanner Views
-
-Dashboard, scan initiation, live logs, and scan history.
-"""
 import json
 import logging
 import socket
+import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.http import (
     HttpResponse,
@@ -27,10 +24,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Scan, Program, Report
+from django.urls import reverse
+from django.utils import timezone
+
+import uuid
+
+from . import ai_agent, mcp_http
+from .models import McpToken, Scan, Program, Report
 from .services import (
     get_log_lines,
-    run_scan_in_background,
     get_assets_overview,
     get_technology_breakdown,
     get_technology_subdomains,
@@ -38,7 +40,7 @@ from .services import (
     get_programs_with_stats,
     mark_new_subdomains,
 )
-from core.validators import validate_domain
+from core.validators import normalize_domain, validate_domain
 
 logger = logging.getLogger(__name__)
 
@@ -90,14 +92,23 @@ def dashboard(request):
     page_number = request.GET.get("page")
     scans = paginator.get_page(page_number)
 
-    programs = Program.objects.all().order_by("-created_at")
-
     context = {
         "scans": scans,
-        "programs": programs,
         "page_title": "Dashboard",
+        **_dashboard_form_context(),
     }
     return render(request, "dashboard.html", context)
+
+
+def _dashboard_form_context() -> dict:
+    """Shared context for the overview page (initial load and form errors)."""
+    programs = list(Program.objects.all().order_by("-created_at"))
+    return {
+        "programs": programs,
+        "recent_scans": Scan.objects.select_related("program")[:6],
+        # Pre-select the only organization so the user doesn't have to
+        "program_id": str(programs[0].id) if len(programs) == 1 else "",
+    }
 
 
 @require_http_methods(["POST"])
@@ -106,7 +117,7 @@ def start_scan(request):
     Handle scan initiation from dashboard form.
     Validates input, creates Scan record, launches background worker.
     """
-    domain = request.POST.get("domain", "").strip()
+    domain = normalize_domain(request.POST.get("domain", ""))
     program_id = request.POST.get("program", "").strip()
 
     # Validation
@@ -118,8 +129,8 @@ def start_scan(request):
     else:
         try:
             validate_domain(domain)
-        except Exception as e:
-            domain_error = str(e)
+        except ValidationError as e:
+            domain_error = " ".join(e.messages)
 
     if not program_id:
         program_error = "Please add organization before scan."
@@ -130,15 +141,15 @@ def start_scan(request):
             program_error = "Selected program does not exist."
 
     if domain_error or program_error:
-        programs = Program.objects.all().order_by("-created_at")
         context = {
-            "domain": domain,
+            **_dashboard_form_context(),
+            "domain": domain or request.POST.get("domain", "").strip(),
+            "program_id": program_id,  # keep the user's selection
             "program_error": program_error,
             "domain_error": domain_error,
-            "programs": programs,
             "page_title": "Dashboard",
         }
-        return render(request, "dashboard.html", context)
+        return render(request, "dashboard.html", context, status=400)
 
     # Create scan record (authorization fields removed from UI)
     scan = Scan.objects.create(
@@ -151,9 +162,9 @@ def start_scan(request):
     scan.program = Program.objects.get(id=program_id)
     scan.save(update_fields=["program"])
 
-    # Launch background scan
-    run_scan_in_background(scan)
-    messages.success(request, f"Scan started for {domain} (ID: {scan.id})")
+    # Leave it PENDING: the separate worker process (manage.py worker) claims
+    # and runs it. Running it here too made both execute the same scan.
+    messages.success(request, f"Scan queued for {domain} (ID: {scan.id})")
 
     return redirect("scanner:scan_detail", scan_id=scan.id)
 
@@ -221,10 +232,29 @@ def scan_detail(request, scan_id):
     page_number = request.GET.get("page")
     httpx_page = paginator.get_page(page_number)
 
+    active_filters = {
+        k: v for k, v in (
+            ("status", status_filter), ("tech", tech_filter),
+            ("ip", ip_filter), ("cname", cname_filter),
+        ) if v
+    }
+
+    # Show what the scanner printed when a scan did not succeed
+    final_log = ""
+    if scan.status in (Scan.Status.FAILED, Scan.Status.CANCELLED):
+        lines, _, _ = get_log_lines(str(scan.id), 0)
+        final_log = "\n".join(lines[-200:])
+
     context = {
         "scan": scan,
         "httpx_page": httpx_page,
         "httpx_results": httpx_page,
+        "total_results": len(httpx_results_all),
+        "new_count": sum(1 for r in httpx_results_all if r.get("is_new")),
+        "is_filtered": bool(active_filters),
+        "filter_query": urlencode(active_filters),
+        "final_log": final_log,
+        "ai": ai_agent.availability(scan) if scan.status == Scan.Status.COMPLETED else None,
         "all_statuses": all_statuses,
         "all_technologies": all_technologies,
         "all_ips": all_ips,
@@ -273,7 +303,7 @@ def scan_logs(request, scan_id):
             "lines": lines,
             "offset": offset,
             "status": status,
-            "is_terminal": status in ("completed", "failed"),
+            "is_terminal": status in ("completed", "failed", "cancelled", "not_found"),
         }
     )
 
@@ -282,7 +312,7 @@ def scan_history(request):
     """
     Scan history page (can be same as dashboard or separate).
     """
-    scans_list = Scan.objects.all()
+    scans_list = Scan.objects.select_related("program")
     paginator = Paginator(scans_list, 10)
     page_number = request.GET.get("page")
     scans = paginator.get_page(page_number)
@@ -523,18 +553,243 @@ def reports_list(request):
     context = {
         "reports": reports,
         "page_title": "Reports",
+        **_ai_picker_context(),
     }
     return render(request, "reports.html", context)
 
 
+def _ai_picker_context() -> dict:
+    """Context for the 'Generate AI report' scan picker (Reports and /mcp pages)."""
+    return {
+        "ai": ai_agent.availability(),
+        "ai_scans": Scan.objects.filter(status=Scan.Status.COMPLETED, program__isnull=False)
+        .select_related("program").defer("httpx_results").order_by("-completed_at")[:50],
+    }
+
+
+MCP_SESSION_TOKENS = "mcp_token_ids"   # tokens created in this browser
+MCP_SESSION_NEW = "mcp_new_token"      # plaintext shown once after Connect
+
+
 def mcp_guide(request):
     """
-    MCP Guide page — explains how to use MCP with ScanX.
+    /mcp — Connect an AI agent (PlayCanvas-style Connect panel) + user documentation.
     """
+    my_ids = request.session.get(MCP_SESSION_TOKENS, [])
+    new_token = request.session.pop(MCP_SESSION_NEW, None)  # shown once
+    endpoint_url = request.build_absolute_uri(reverse("scanner:mcp_endpoint"))
     context = {
-        "page_title": "MCP Guide",
+        "page_title": "MCP",
+        "programs": Program.objects.order_by("name"),
+        "endpoint_url": endpoint_url,
+        "new_token": new_token,
+        "my_connections": McpToken.objects.filter(id__in=my_ids).select_related("program"),
+        "tools": mcp_http.TOOLS,
+        "prompts": mcp_http.PROMPTS,
+        "server_name": mcp_http.SERVER_NAME,
+        "api_base": request.build_absolute_uri("/api/v1/"),
+        **_ai_picker_context(),
     }
     return render(request, "mcp_guide.html", context)
+
+
+@require_http_methods(["POST"])
+def mcp_connect(request):
+    """Create an organization-scoped MCP token (the Connect button)."""
+    program = Program.objects.filter(id=request.POST.get("program") or 0).first()
+    if not program:
+        messages.error(request, "Choose the organization your AI agent should analyse.")
+        return redirect(reverse("scanner:mcp_guide") + "#connect")
+
+    token, plaintext = mcp_http.create_token(program, request.POST.get("label", ""))
+    ids = request.session.get(MCP_SESSION_TOKENS, [])
+    request.session[MCP_SESSION_TOKENS] = (ids + [token.id])[-50:]
+    request.session[MCP_SESSION_NEW] = {
+        "id": token.id,
+        "token": plaintext,
+        "program": program.name,
+        "label": token.label,
+    }
+    return redirect(reverse("scanner:mcp_guide") + "#connect")
+
+
+@require_http_methods(["POST"])
+def mcp_revoke(request, token_id):
+    """Disconnect: revoke a token created from this browser."""
+    if token_id not in request.session.get(MCP_SESSION_TOKENS, []):
+        messages.error(request, "You can only disconnect agents you connected from this browser.")
+        return redirect(reverse("scanner:mcp_guide") + "#connections")
+    McpToken.objects.filter(id=token_id, revoked_at__isnull=True).update(revoked_at=timezone.now())
+    messages.success(request, "Agent disconnected. Its token no longer works.")
+    return redirect(reverse("scanner:mcp_guide") + "#connections")
+
+
+# =====================================================================
+# REST API — the same tools for agents and scripts that don't speak MCP
+# =====================================================================
+
+def _api_error(status, message):
+    response = JsonResponse({"data": None, "meta": {"status": "error", "message": message}}, status=status)
+    if status == 401:
+        response["WWW-Authenticate"] = 'Bearer realm="scanx-api"'
+    return response
+
+
+def _api_token(request):
+    token = mcp_http.authenticate(request.headers.get("Authorization", ""))
+    if token:
+        token.channel = Report.Source.API  # reports saved through the API are labelled as such
+    return token
+
+
+@require_http_methods(["GET"])
+def api_tools(request):
+    """GET /api/v1/tools — tool list with JSON Schemas (drop-in for function calling)."""
+    if not _api_token(request):
+        return _api_error(401, "Missing or invalid token. Create one with the Connect button on /mcp.")
+    tools = [
+        {
+            "name": name,
+            "description": spec["description"],
+            "read_only": bool(spec["annotations"].get("readOnlyHint")),
+            "input_schema": spec["inputSchema"],
+            "url": request.build_absolute_uri(reverse("scanner:api_tool_call", args=[name])),
+        }
+        for name, spec in mcp_http.TOOLS.items()
+    ]
+    return JsonResponse({"data": tools, "meta": {"status": "ok", "count": len(tools)}})
+
+
+@csrf_exempt  # bearer-token auth, not cookies
+@require_http_methods(["POST"])
+def api_tool_call(request, name):
+    """POST /api/v1/tools/<name> — run one tool; JSON body = the tool's arguments."""
+    token = _api_token(request)
+    if not token:
+        return _api_error(401, "Missing or invalid token. Create one with the Connect button on /mcp.")
+    if name not in mcp_http.TOOLS:
+        return _api_error(404, f"Unknown tool {name!r}. GET /api/v1/tools lists them.")
+    try:
+        args = json.loads(request.body or b"{}")
+    except (ValueError, UnicodeDecodeError):
+        return _api_error(400, "Body must be a JSON object with the tool's arguments.")
+    envelope, is_error = mcp_http.run_tool(name, args, token, request)
+    return JsonResponse(envelope, status=422 if is_error else 200)
+
+
+@require_http_methods(["GET"])
+def api_openapi(request):
+    """GET /api/v1/openapi.json — OpenAPI 3.1 spec of the tools (public, no data)."""
+    base = request.build_absolute_uri("/").rstrip("/")
+    paths = {}
+    for name, spec in mcp_http.TOOLS.items():
+        paths[f"/api/v1/tools/{name}"] = {
+            "post": {
+                "operationId": name,
+                "summary": spec["title"],
+                "description": spec["description"],
+                "requestBody": {"required": True, "content": {"application/json": {"schema": spec["inputSchema"]}}},
+                "responses": {
+                    "200": {"description": "Envelope {data, meta}"},
+                    "401": {"description": "Missing or invalid token"},
+                    "422": {"description": "Tool error; see meta.message"},
+                },
+            }
+        }
+    return JsonResponse({
+        "openapi": "3.1.0",
+        "info": {"title": "scanX analysis API", "version": mcp_http.SERVER_VERSION,
+                 "description": mcp_http.INSTRUCTIONS},
+        "servers": [{"url": base}],
+        "components": {"securitySchemes": {"bearer": {"type": "http", "scheme": "bearer"}}},
+        "security": [{"bearer": []}],
+        "paths": paths,
+    })
+
+
+# =====================================================================
+# Built-in AI ("Generate AI report") — runs on this server
+# =====================================================================
+
+@require_http_methods(["POST"])
+def ai_report_create(request):
+    scan_id = request.POST.get("scan")
+    scan = Scan.objects.select_related("program").filter(id=scan_id).first() if _is_uuid(scan_id) else None
+    back = request.POST.get("next") or reverse("scanner:reports")
+    if not back.startswith("/"):
+        back = reverse("scanner:reports")
+    if not scan:
+        messages.error(request, "Choose a completed scan to analyse.")
+        return redirect(back)
+
+    info = ai_agent.availability(scan)
+    if not info["ok"]:
+        recent = info.get("recent_report")
+        if recent:
+            messages.info(request, "An AI report for this scan was just requested — showing it.")
+            return redirect("scanner:report_detail", report_id=recent.id)
+        messages.error(request, info["reason"])
+        return redirect(back)
+
+    report = ai_agent.queue_report(scan)
+    return redirect("scanner:report_detail", report_id=report.id)
+
+
+def _is_uuid(value) -> bool:
+    try:
+        uuid.UUID(str(value))
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+@require_http_methods(["GET"])
+def report_status(request, report_id):
+    """Small JSON poll endpoint used by the report page while the AI writes."""
+    report = get_object_or_404(Report, id=report_id)
+    return JsonResponse({"status": report.status})
+
+
+@csrf_exempt  # authenticated by bearer token, not cookies
+def mcp_endpoint(request):
+    """
+    MCP Streamable HTTP endpoint. JSON-RPC 2.0 over POST, JSON responses.
+    GET is not offered (no server-initiated stream), per the MCP spec.
+    """
+    if request.method != "POST":
+        response = JsonResponse(
+            {"error": "This is an MCP endpoint. Connect an MCP client to it; see /mcp."}, status=405
+        )
+        response["Allow"] = "POST"
+        return response
+
+    token = mcp_http.authenticate(request.headers.get("Authorization", ""))
+    if not token:
+        response = JsonResponse(
+            {"jsonrpc": "2.0", "id": None, "error": {
+                "code": -32001,
+                "message": "Missing or invalid token. Create one with the Connect button on /mcp.",
+            }},
+            status=401,
+        )
+        response["WWW-Authenticate"] = 'Bearer realm="scanx-mcp"'
+        return response
+
+    try:
+        payload = json.loads(request.body or b"null")
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse(
+            {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}}, status=400
+        )
+
+    if isinstance(payload, list):  # JSON-RPC batch (older protocol versions)
+        replies = [r for r in (mcp_http.handle_message(m, token, request) for m in payload) if r]
+        return JsonResponse(replies, safe=False) if replies else HttpResponse(status=202)
+
+    reply = mcp_http.handle_message(payload, token, request)
+    if reply is None:  # notification or client response
+        return HttpResponse(status=202)
+    return JsonResponse(reply)
 
 
 def report_detail(request, report_id):
@@ -546,11 +801,13 @@ def report_detail(request, report_id):
     context = {
         "report": report,
         "page_title": f"Report: {report.title}",
+        # Pretty JSON, auto-escaped by the template (json_script rendered nothing visible)
+        "findings_json": json.dumps(report.findings, indent=2, ensure_ascii=False) if report.findings else "",
     }
     return render(request, "report_detail.html", context)
 
 
-@require_http_methods(["POST"])
+@require_http_methods(["GET"])
 def report_download(request, report_id):
     """
     Download a report as Markdown file.
@@ -597,7 +854,10 @@ def report_download(request, report_id):
 # MCP HTTP Server Management
 # =====================================================================
 
-@login_required
+def _is_local_request(request) -> bool:
+    return request.META.get("REMOTE_ADDR") in ("127.0.0.1", "::1")
+
+
 @require_http_methods(["GET"])
 def mcp_http_status(request):
     """Check if MCP HTTP server is running on port 8001"""
@@ -626,10 +886,16 @@ def mcp_http_status(request):
     })
 
 
-@login_required
 @require_http_methods(["POST"])
 def mcp_http_start(request):
-    """Start MCP HTTP server in background"""
+    """Start MCP HTTP server in background (only from the local machine)."""
+    # The app has no login system, so the old @login_required just 404'd.
+    # Spawning a network-facing server must not be open to remote visitors.
+    if not _is_local_request(request):
+        return JsonResponse(
+            {"status": "error", "message": "MCP server can only be started from localhost."},
+            status=403,
+        )
     try:
         # Check if already running
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -648,4 +914,5 @@ def mcp_http_start(request):
 
         return JsonResponse({'status': 'starting', 'message': 'MCP HTTP server starting...'})
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        logger.exception("Failed to start MCP HTTP server")
+        return JsonResponse({'status': 'error', 'message': 'Failed to start MCP server; see server log.'}, status=500)

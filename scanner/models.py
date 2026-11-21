@@ -181,6 +181,36 @@ class Program(models.Model):
         return f"{self.name}"
 
 
+class McpToken(models.Model):
+    """
+    Access token an AI agent uses to call the scanX MCP endpoint.
+
+    Scoped to one organization: the agent only sees that organization's scans
+    and can only save reports for them. Only a SHA-256 hash is stored; the
+    plaintext is shown once, when the user clicks Connect.
+    """
+
+    program = models.ForeignKey(
+        Program, on_delete=models.CASCADE, related_name="mcp_tokens",
+    )
+    label = models.CharField(max_length=100, default="AI agent")
+    token_hash = models.CharField(max_length=64, unique=True)
+    prefix = models.CharField(max_length=16)  # first chars, for display only
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.label} ({self.prefix}…) → {self.program}"
+
+    @property
+    def is_active(self) -> bool:
+        return self.revoked_at is None
+
+
 class Report(models.Model):
     """
     AI-generated analysis reports for scans.
@@ -194,11 +224,20 @@ class Report(models.Model):
         CUSTOM = "custom", "Custom Analysis"
     
     class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
         GENERATING = "generating", "Generating"
         COMPLETED = "completed", "Completed"
         FAILED = "failed", "Failed"
-    
+
+    class Source(models.TextChoices):
+        BUILTIN_AI = "builtin_ai", "scanX AI"
+        MCP = "mcp", "AI agent (MCP)"
+        API = "api", "AI agent (REST API)"
+        OTHER = "other", "Other"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Which of the three AI paths produced the report (used for limits and display)
+    source = models.CharField(max_length=20, choices=Source.choices, default=Source.OTHER, db_index=True)
     scan = models.ForeignKey(
         Scan,
         on_delete=models.CASCADE,

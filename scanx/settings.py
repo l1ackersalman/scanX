@@ -16,14 +16,41 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-key-change-in-production")
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
+# Off by default: the app is public, and DEBUG pages show code and settings.
+# Set DEBUG=True in .env while developing.
+DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "yes")
+
+
+def _load_secret_key() -> str:
+    """
+    SECRET_KEY from the environment, else a random key generated once and kept
+    in BASE_DIR/.secret_key (gitignored). Never a hard-coded public value.
+    """
+    key = os.environ.get("SECRET_KEY", "").strip()
+    if key:
+        return key
+    key_file = BASE_DIR / ".secret_key"
+    try:
+        return key_file.read_text().strip()
+    except FileNotFoundError:
+        from django.core.management.utils import get_random_secret_key
+        key = get_random_secret_key()
+        key_file.write_text(key)
+        key_file.chmod(0o600)
+        return key
+
+
+SECRET_KEY = _load_secret_key()
 
 ALLOWED_HOSTS = [
-    h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()
+]
+
+# Public URL(s) the site is opened from, e.g. "https://scanx.example.com,http://203.0.113.7:8000".
+# Needed for forms to pass Django's CSRF check behind a domain or HTTPS proxy.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
 ]
 
 # Application definition
@@ -42,6 +69,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Serves CSS/JS even with DEBUG off (runserver stops doing it then)
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -106,6 +135,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+# Serve straight from static/ so CSS/JS edits don't need collectstatic
+WHITENOISE_USE_FINDERS = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -131,6 +162,29 @@ TOOLS_PATH = os.environ.get("TOOLS_PATH", "")
 # Maximum scan execution time in seconds
 SCAN_TIMEOUT = int(os.environ.get("SCAN_TIMEOUT", "3600"))
 
+# ---------------------------------------------------------------------
+# Built-in AI analysis ("Generate AI report" button)
+# The API key is read by the provider SDK from the environment:
+#   ANTHROPIC_API_KEY (Claude) or OPENAI_API_KEY (OpenAI).
+# AI_PROVIDER: "anthropic", "openai", or empty = whichever key is set
+# (Anthropic first). No key set = the button is shown as unavailable.
+# ---------------------------------------------------------------------
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "").strip().lower()  # anthropic | openai | nvidia
+AI_MODEL_ANTHROPIC = os.environ.get("AI_MODEL_ANTHROPIC", "claude-opus-5-5")
+AI_MODEL_OPENAI = os.environ.get("AI_MODEL_OPENAI", "gpt-5")
+# NVIDIA NIM (OpenAI-compatible API), e.g. Nemotron. Key: NVIDIA_API_KEY (nvapi-...).
+# Copy the exact model id from the model's page on build.nvidia.com.
+AI_MODEL_NVIDIA = os.environ.get("AI_MODEL_NVIDIA", "nvidia/nemotron-3-ultra-550b-a55b")
+NVIDIA_BASE_URL = os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+AI_DAILY_LIMIT = int(os.environ.get("AI_DAILY_LIMIT", "30"))             # built-in reports per day, all users
+AI_SCAN_COOLDOWN_MINUTES = int(os.environ.get("AI_SCAN_COOLDOWN_MINUTES", "10"))  # per scan
+AI_MAX_TURNS = int(os.environ.get("AI_MAX_TURNS", "25"))                 # tool-call rounds per report
+AI_JOB_TIMEOUT = int(os.environ.get("AI_JOB_TIMEOUT", "600"))            # seconds per report
+
+# Maximum scans waiting in the queue. The app is public, so this stops one
+# visitor from filling the queue and blocking everyone else's scans.
+SCAN_QUEUE_LIMIT = int(os.environ.get("SCAN_QUEUE_LIMIT", "5"))
+
 # Ensure scan data directory exists
 SCANX_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -154,8 +208,11 @@ LOGGING = {
             "formatter": "simple",
         },
         "file": {
-            "class": "logging.FileHandler",
+            # Rotates at 5 MB, keeps 3 old files, so the log can't fill the disk
+            "class": "logging.handlers.RotatingFileHandler",
             "filename": BASE_DIR / "scanx.log",
+            "maxBytes": 5_000_000,
+            "backupCount": 3,
             "formatter": "verbose",
         },
     },

@@ -4,10 +4,13 @@
 {% block title %}Reports — scanX{% endblock %}
 
 {% block content %}
+<div class="content-wrapper">
 <div class="page-banner">
   <h1>Reports</h1>
-  <p>AI-generated analysis reports for completed scans.</p>
+  <p>AI analysis reports for completed scans — written by scanX's built-in AI or by your own agent via <a href="{% url 'scanner:mcp_guide' %}">MCP / API</a>.</p>
 </div>
+
+{% include "partials/ai_report_picker.html" with picker_title="New AI report" next_url=request.path %}
 
 <div class="card">
   <div class="card-body" style="padding: 0;">
@@ -82,11 +85,11 @@
       {% endif %}
     {% else %}
       <div class="empty-state empty-state-lg">
-        <div class="icon">📄</div>
         <h2>No reports yet</h2>
-        <p>Generate AI analysis reports from completed scans to see them here.</p>
+        <p>Generate one above from a completed scan, or connect your own AI agent on the <a href="{% url 'scanner:mcp_guide' %}">MCP page</a>.</p>
       </div>
     {% endif %}
   </div>
+</div>
 </div>
 {% endblock %}

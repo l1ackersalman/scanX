@@ -1,497 +1,380 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Dashboard — scanX{% endblock %}
+{% block title %}Overview — scanX{% endblock %}
 
 {% block extra_css %}
 <style>
-  /* =====================================================================
-     Dashboard — Viewport-optimized Layout
-     ===================================================================== */
-
-  /* Main content wrapper: use full viewport height */
-  .content-wrapper {
-    min-height: 100vh;
-    min-height: 100dvh;
+  .overview {
     display: grid;
-    grid-template-rows: auto auto auto auto;
-    gap: var(--sx-space-4);
-    padding: var(--sx-space-4) var(--sx-space-6);
-    box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sx-space-6);
+    max-width: 1200px;
   }
+  .field-hint code { overflow-wrap: anywhere; }
 
-  /* Hero Section — compact */
-  .hero-section {
-    margin: 0;
-    padding: var(--sx-space-2) 0 0;
-  }
-
-  .hero-content {
-    max-width: 800px;
-  }
-
-  .hero-title {
-    font-size: clamp(var(--sx-text-xl), 3vw, var(--sx-text-2xl));
+  /* Header: task-first, no marketing hero */
+  .overview-head h1 {
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
     font-weight: 700;
     line-height: 1.15;
-    letter-spacing: -0.02em;
-    color: var(--sx-text-primary);
-    margin: 0 0 var(--sx-space-2) 0;
+    margin: 0 0 var(--sx-space-2);
   }
-
-  .hero-title .accent {
-    color: var(--sx-accent);
-  }
-
-  .hero-subtitle {
-    font-size: var(--sx-text-base);
-    line-height: 1.5;
-    color: var(--sx-text-secondary);
+  .overview-head p {
     margin: 0;
-    max-width: 640px;
+    max-width: 62ch;
+    color: var(--sx-text-secondary);
   }
 
-  /* Scan Panel — compact */
+  /* New scan: the dominant element on the page */
   .scan-panel {
     background: var(--sx-surface);
     border: 1px solid var(--sx-border);
+    border-top: 3px solid var(--sx-accent);
     border-radius: var(--sx-radius-card);
-    padding: var(--sx-space-4);
-    margin: 0;
+    padding: var(--sx-space-5);
   }
-
-  .scan-panel-header {
-    margin-bottom: var(--sx-space-3);
-  }
-
-  .scan-panel-title {
-    font-size: var(--sx-text-base);
-    font-weight: 600;
-    color: var(--sx-text-primary);
-    margin: 0;
-  }
-
   .scan-form-inline {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) auto;
     align-items: start;
-    gap: var(--sx-space-3);
+    gap: var(--sx-space-4);
   }
-
   @media (max-width: 900px) {
-    .scan-form-inline {
-      grid-template-columns: 1fr;
-    }
+    .scan-form-inline { grid-template-columns: 1fr; }
   }
-
-  .scan-form-group {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
+  .scan-form-group { min-width: 0; display: flex; flex-direction: column; gap: var(--sx-space-1); }
+  .scan-form-group .form-input { height: 44px; font-size: var(--sx-text-base); }
+  .scan-form-group .form-input[aria-invalid="true"] { border-color: var(--sx-danger); }
+  .field-hint { font-size: var(--sx-text-xs); color: var(--sx-text-secondary); margin: 0; }
+  .label-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sx-space-2); }
+  .label-row a { font-size: var(--sx-text-xs); }
+  .scan-submit {
+    height: 44px;
+    margin-top: calc(var(--sx-text-sm) * 1.5 + var(--sx-space-1));
+    padding: 0 var(--sx-space-5);
+    font-size: var(--sx-text-base);
+    white-space: nowrap;
   }
-
-  .scan-form-group .form-label {
-    font-size: var(--sx-text-sm);
-    font-weight: 500;
-    color: var(--sx-text-primary);
-    margin-bottom: var(--sx-space-1);
-  }
-
-  .scan-form-group .form-input,
-  .scan-form-group .form-input:focus,
-  .scan-form-group select.form-input {
-    height: 40px;
-    padding: var(--sx-space-2) var(--sx-space-3);
-    font-size: var(--sx-text-sm);
-    flex: 1;
-  }
-
-  .scan-form-group .form-text {
-    margin-top: var(--sx-space-1);
+  @media (max-width: 900px) { .scan-submit { margin-top: 0; width: 100%; } }
+  .scope-note {
+    margin: var(--sx-space-4) 0 0;
+    padding-top: var(--sx-space-3);
+    border-top: 1px solid var(--sx-border);
     font-size: var(--sx-text-xs);
     color: var(--sx-text-secondary);
   }
 
-  .scan-btn-primary {
-    height: 40px;
-    padding: var(--sx-space-2) var(--sx-space-4);
-    font-size: var(--sx-text-sm);
-    font-weight: 600;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 22px;
-  }
-
-  /* Workflow Section */
-  .workflow-section {
-    margin: 0;
-  }
-
-  .workflow-header {
-    margin-bottom: var(--sx-space-3);
-  }
-
-  .workflow-title {
-    font-size: var(--sx-text-lg);
-    font-weight: 600;
-    color: var(--sx-text-primary);
-    margin: 0 0 var(--sx-space-1);
-  }
-
-  .workflow-subtitle {
-    font-size: var(--sx-text-sm);
-    color: var(--sx-text-secondary);
-    margin: 0;
-  }
-
-  .workflow-grid {
+  /* Recent scans + pipeline: asymmetric split */
+  .overview-split {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--sx-space-3);
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    gap: var(--sx-space-5);
+    align-items: start;
   }
+  @media (max-width: 1024px) { .overview-split { grid-template-columns: 1fr; } }
 
-  @media (max-width: 1024px) {
-    .workflow-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: var(--sx-space-3); margin-bottom: var(--sx-space-3);
   }
+  .section-head h2 { font-size: var(--sx-text-lg); margin: 0; }
+  .section-head a { font-size: var(--sx-text-sm); }
 
-  @media (max-width: 640px) {
-    .workflow-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .workflow-card {
+  .recent-list {
+    list-style: none; margin: 0; padding: 0;
     background: var(--sx-surface);
     border: 1px solid var(--sx-border);
     border-radius: var(--sx-radius-card);
-    padding: var(--sx-space-3);
-    display: flex;
-    flex-direction: column;
-    gap: var(--sx-space-2);
-    transition: border var(--sx-transition), box-shadow var(--sx-transition);
-    height: 100%;
-    min-height: 140px;
   }
-
-  .workflow-card:hover {
-    border-color: var(--sx-accent);
-    box-shadow: var(--sx-shadow);
+  .recent-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sx-space-1) var(--sx-space-4);
+    padding: var(--sx-space-3) var(--sx-space-4);
+    border-bottom: 1px solid var(--sx-border);
   }
-
-  .workflow-number {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: var(--sx-radius-pill);
-    background: var(--sx-accent);
-    color: var(--sx-background);
-    font-size: var(--sx-text-xs);
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .workflow-card-title {
+  .recent-item:last-child { border-bottom: none; }
+  .recent-domain {
+    font-family: var(--sx-font-mono);
     font-size: var(--sx-text-sm);
-    font-weight: 600;
-    color: var(--sx-text-primary);
-    margin: 0;
-    line-height: 1.3;
-  }
-
-  .workflow-card-desc {
-    font-size: var(--sx-text-xs);
-    color: var(--sx-text-secondary);
-    line-height: 1.45;
-    margin: 0;
-    flex: 1;
-  }
-
-  /* Mission Statement — compact */
-  .mission-section {
-    background: linear-gradient(135deg, rgba(118, 185, 0, 0.08) 0%, rgba(118, 185, 0, 0.02) 100%);
-    border: 1px solid rgba(118, 185, 0, 0.2);
-    border-radius: var(--sx-radius-card);
-    padding: var(--sx-space-4) var(--sx-space-5);
-    text-align: center;
-    margin: 0;
-  }
-
-  .mission-tagline {
-    font-size: var(--sx-text-lg);
-    font-weight: 600;
-    color: var(--sx-accent);
-    letter-spacing: 0.02em;
-    margin: 0 0 var(--sx-space-2);
-  }
-
-  .mission-text {
-    font-size: var(--sx-text-base);
     font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .recent-meta { font-size: var(--sx-text-xs); color: var(--sx-text-secondary); }
+  .recent-status { grid-row: span 2; align-self: center; text-align: right; }
+  .recent-error {
+    grid-column: 1 / -1;
+    font-size: var(--sx-text-xs);
+    color: var(--sx-danger);
+    overflow-wrap: anywhere;
+  }
+  .recent-empty {
+    padding: var(--sx-space-6) var(--sx-space-4);
+    color: var(--sx-text-secondary);
+    font-size: var(--sx-text-sm);
+    text-align: center;
+  }
+
+  /* Pipeline: a plain ordered list, not a card grid */
+  .pipeline { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+  .pipeline li {
+    counter-increment: step;
+    position: relative;
+    padding: 0 0 var(--sx-space-4) var(--sx-space-6);
+    font-size: var(--sx-text-sm);
+    color: var(--sx-text-secondary);
+  }
+  .pipeline li::before {
+    content: counter(step);
+    position: absolute; left: 0; top: 0;
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    border: 1px solid var(--sx-border);
+    border-radius: var(--sx-radius-control);
+    font-size: var(--sx-text-xs);
+    font-weight: 600;
     color: var(--sx-text-primary);
-    line-height: 1.4;
-    margin: 0;
-    font-style: italic;
   }
+  .pipeline strong { display: block; color: var(--sx-text-primary); font-weight: 600; }
+  .pipeline code { font-family: var(--sx-font-mono); font-size: var(--sx-text-xs); color: var(--sx-accent); }
 
-  /* Responsive: allow scrolling on small screens */
-  @media (max-height: 720px) {
-    .content-wrapper {
-      min-height: auto;
-    }
+  /* MCP: a slim status row, not a feature card */
+  .mcp-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--sx-space-3);
+    padding: var(--sx-space-3) var(--sx-space-4);
+    border: 1px dashed var(--sx-border);
+    border-radius: var(--sx-radius-control);
+    font-size: var(--sx-text-sm);
   }
-
-  @media (max-width: 900px) {
-    .content-wrapper {
-      grid-template-rows: auto auto auto auto;
-      gap: var(--sx-space-3);
-    }
-  }
+  .mcp-row h2 { font-family: var(--sx-font-sans); font-size: var(--sx-text-sm); font-weight: 600; margin: 0; }
+  .mcp-row .spacer { flex: 1; }
+  .mcp-url { font-family: var(--sx-font-mono); font-size: var(--sx-text-xs); color: var(--sx-text-secondary); overflow-wrap: anywhere; }
+  .status-unknown { color: var(--sx-text-secondary); border: 1px solid var(--sx-border); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
-  <!-- Hero Section -->
-  <section class="hero-section" aria-labelledby="hero-title">
-    <div class="hero-content">
-      <h1 id="hero-title" class="hero-title">
-        Discover Your Attack Surface.<br>
-        <span class="accent">Stay Ahead of Threats.</span>
-      </h1>
-      <p class="hero-subtitle">
-        AI-powered infrastructure monitoring and vulnerability assessment to help organizations identify and prioritize security weaknesses.
-      </p>
-    </div>
-  </section>
+<div class="overview">
 
-  <!-- Scan Panel -->
+  <header class="overview-head">
+    <h1>Scan a domain</h1>
+    <p>Finds subdomains, checks which ones resolve, and probes the live ones over HTTP for status, page title, technology, IP and CNAME.</p>
+  </header>
+
+  <!-- New scan -->
   <section class="scan-panel" aria-labelledby="scan-panel-title">
-    <div class="scan-panel-header">
-      <h2 id="scan-panel-title" class="scan-panel-title">New Scan</h2>
-    </div>
+    <h2 id="scan-panel-title" class="sr-only">New scan</h2>
+
     {% if not programs %}
-      <div class="message message-warning" style="margin-bottom: var(--sx-space-4);">
-        <strong>⚠ No organizations found.</strong> Please <a href="{% url 'scanner:organizations_add' %}" class="link-primary">add an organization</a> before starting a scan.
+      <div class="notice notice-neutral" role="note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p class="notice-title">Add an organization first</p>
+        <p class="notice-body">Every scan belongs to an organization, so you can group results by who you're testing for.</p>
+        <div class="notice-actions">
+          <a href="{% url 'scanner:organizations_add' %}" class="btn-primary">Add organization</a>
+        </div>
       </div>
     {% endif %}
+
     <form method="post" action="{% url 'scanner:start_scan' %}" novalidate id="new-scan-form" class="scan-form-inline">
       {% csrf_token %}
       <div class="scan-form-group">
-        <label for="id_domain" class="form-label">Target Domain</label>
+        <label for="id_domain" class="form-label">Target domain</label>
         <input type="text" id="id_domain" name="domain" class="form-input"
-               required autocomplete="off"
+               required autocomplete="off" autocapitalize="off" spellcheck="false"
+               inputmode="url" {% if programs %}autofocus{% endif %}
                value="{{ domain|default:'' }}"
                placeholder="example.com"
-               pattern="^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
-               title="Enter a valid domain name">
-        <small class="form-text">Enter the target domain for reconnaissance.</small>
+               aria-describedby="domain-hint{% if domain_error %} domain-error{% endif %}"
+               {% if domain_error %}aria-invalid="true"{% endif %}>
         {% if domain_error %}
-          <small class="form-text form-error" style="color: var(--sx-danger); margin-top: var(--sx-space-1); display: block;">{{ domain_error }}</small>
+          <p id="domain-error" class="form-error" role="alert">{{ domain_error }}</p>
         {% endif %}
+        <p id="domain-hint" class="field-hint">A domain or a full URL — <code>https://example.com/page</code> becomes <code>example.com</code>.</p>
       </div>
+
       <div class="scan-form-group">
-        <label for="id_program" class="form-label">Organization <span class="text-danger">*</span></label>
-        <select id="id_program" name="program" class="form-input" required>
-          <option value="">Select an Organization</option>
+        <div class="label-row">
+          <label for="id_program" class="form-label">Organization</label>
+          {% if programs %}<a href="{% url 'scanner:organizations_add' %}">+ New</a>{% endif %}
+        </div>
+        <select id="id_program" name="program" class="form-input" required
+                {% if program_error %}aria-invalid="true" aria-describedby="program-error"{% endif %}
+                {% if not programs %}disabled{% endif %}>
+          {% if programs|length != 1 %}<option value="">Choose an organization</option>{% endif %}
           {% for program in programs %}
-            <option value="{{ program.id }}"{% if program.id|stringformat:"s" == program_id %} selected{% endif %}>{{ program.name }} ({{ program.get_organization_type_display }})</option>
+            <option value="{{ program.id }}"{% if program.id|stringformat:"s" == program_id %} selected{% endif %}>{{ program.name }}</option>
           {% endfor %}
         </select>
         {% if program_error %}
-          <small class="form-text form-error" style="color: var(--sx-danger); margin-top: var(--sx-space-1); display: block;">{{ program_error }}</small>
+          <p id="program-error" class="form-error" role="alert">{{ program_error }}</p>
         {% endif %}
       </div>
-      <button type="submit" class="btn-primary scan-btn-primary">
-        Start Scan
+
+      <button type="submit" class="btn-primary scan-submit" id="scan-submit" {% if not programs %}disabled{% endif %}>
+        Start scan
       </button>
     </form>
+
+    <p class="scope-note">Only scan domains you own or have written permission to test. Scans run one at a time; new ones wait in the queue.</p>
   </section>
 
-  <!-- MCP HTTP Server Status -->
-  <section class="mcp-status-section" aria-labelledby="mcp-status-title" style="margin-bottom: var(--sx-space-6);">
-    <div class="card">
-      <div class="card-head" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sx-space-3);">
-        <h2 id="mcp-status-title" class="card-title" style="margin: 0;">MCP Server Status</h2>
-        <div id="mcp-status-display" style="display: flex; align-items: center; gap: var(--sx-space-3);">
-          <span id="mcp-status-indicator" class="status-badge status-unknown" style="display: inline-flex; align-items: center; gap: var(--sx-space-1);">Checking...</span>
-          <span id="mcp-status-url" class="text-secondary" style="font-size: var(--sx-text-sm); display: none;"></span>
-        </div>
+  <div class="overview-split">
+    <!-- Recent scans -->
+    <section aria-labelledby="recent-title">
+      <div class="section-head">
+        <h2 id="recent-title">Recent scans</h2>
+        {% if recent_scans %}<a href="{% url 'scanner:history' %}">All scans →</a>{% endif %}
       </div>
-      <div class="card-body" style="padding: var(--sx-space-4);">
-        <div id="mcp-status-content" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--sx-space-3);">
-          <div id="mcp-stopped-state" style="display: none;">
-            <p style="margin: 0; color: var(--sx-text-secondary);">MCP HTTP server is not running.</p>
-            <button id="mcp-start-btn" class="btn-primary" onclick="startMcpHttpServer()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: var(--sx-space-2);"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              Start MCP HTTP Server
-            </button>
-          </div>
-          <div id="mcp-running-state" style="display: none;">
-            <span class="status-badge status-running" style="display: inline-flex; align-items: center; gap: var(--sx-space-1);">Running on port 8001</span>
-            <span id="mcp-url-display" class="text-secondary" style="font-family: var(--sx-font-mono); font-size: var(--sx-text-sm);"></span>
-            <button id="mcp-copy-btn" class="btn-ghost btn-sm" onclick="copyMcpUrl()" style="margin-left: var(--sx-space-2);">Copy URL</button>
-          </div>
-        </div>
-      </div>
-    </div>
+      {% if recent_scans %}
+        <ul class="recent-list">
+          {% for scan in recent_scans %}
+          <li class="recent-item">
+            <a href="{% url 'scanner:scan_detail' scan.id %}" class="recent-domain">{{ scan.domain }}</a>
+            <span class="recent-status"><span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span></span>
+            <span class="recent-meta">
+              {% if scan.program %}{{ scan.program.name }} · {% endif %}{{ scan.created_at|timesince }} ago
+              {% if scan.status == "completed" %} · {{ scan.live_subdomains|default:0 }} live of {{ scan.total_subdomains|default:0 }}{% endif %}
+            </span>
+            {% if scan.status == "failed" and scan.error_message %}
+              <span class="recent-error">{{ scan.error_message|truncatechars:140 }}</span>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="recent-list"><p class="recent-empty">No scans yet. Your first one will show up here with its live status.</p></div>
+      {% endif %}
+    </section>
+
+    <!-- What a scan does -->
+    <section aria-labelledby="pipeline-title">
+      <div class="section-head"><h2 id="pipeline-title">What a scan runs</h2></div>
+      <ol class="pipeline">
+        <li><strong>Collect subdomains</strong><code>subfinder</code>, <code>assetfinder</code>, <code>chaos</code> and certificate logs via <code>crt</code>.</li>
+        <li><strong>Resolve</strong><code>dnsx</code> keeps the names that answer DNS.</li>
+        <li><strong>Probe over HTTP</strong><code>httpx</code> records status, title, technology, IP and CNAME.</li>
+      </ol>
+    </section>
+  </div>
+
+  <!-- MCP server -->
+  <section class="mcp-row" aria-labelledby="mcp-status-title">
+    <h2 id="mcp-status-title">MCP server</h2>
+    <span id="mcp-status-indicator" class="status-badge status-unknown" aria-live="polite">Checking…</span>
+    <span id="mcp-url-display" class="mcp-url" hidden></span>
+    <span class="spacer"></span>
+    <span id="mcp-feedback" class="text-xs" aria-live="polite"></span>
+    <button id="mcp-copy-btn" type="button" class="btn-ghost btn-sm" hidden>Copy URL</button>
+    <button id="mcp-start-btn" type="button" class="btn-ghost btn-sm" hidden>Start server</button>
+    <a href="{% url 'scanner:mcp_guide' %}" class="text-xs">How MCP works</a>
   </section>
 
-  <!-- ScanX Workflow -->
-  <section class="workflow-section" aria-labelledby="workflow-title">
-    <div class="workflow-header">
-      <h2 id="workflow-title" class="workflow-title">ScanX Workflow</h2>
-      <p class="workflow-subtitle">Six stages of automated security assessment</p>
-    </div>
-    <div class="workflow-grid" role="list" aria-label="ScanX Workflow">
-      <article class="workflow-card" role="listitem">
-        <span class="workflow-number">1</span>
-        <h3 class="workflow-card-title">Asset Discovery</h3>
-        <p class="workflow-card-desc">Continuous enumeration of subdomains, DNS records, and exposed services across the external attack surface.</p>
-      </article>
-      <article class="workflow-card" role="listitem">
-        <span class="workflow-number">2</span>
-        <h3 class="workflow-card-title">Technology Fingerprinting</h3>
-        <p class="workflow-card-desc">Identification of web technologies, frameworks, servers, and configurations through HTTP probing and analysis.</p>
-      </article>
-      <article class="workflow-card" role="listitem">
-        <span class="workflow-number">3</span>
-        <h3 class="workflow-card-title">Security Intelligence</h3>
-        <p class="workflow-card-desc">Aggregation of threat intelligence, CVE data, and vulnerability feeds relevant to discovered assets.</p>
-      </article>
-      <article class="workflow-card" role="listitem">
-        <span class="workflow-number">4</span>
-        <h3 class="workflow-card-title">AI-Assisted Investigation</h3>
-        <p class="workflow-card-desc">Autonomous agentic workflows analyze findings, correlate data, and simulate attack paths.</p>
-      </article>
-      <article class="workflow-card" role="listitem">
-        <span class="workflow-number">5</span>
-        <h3 class="workflow-card-title">Risk Prioritization</h3>
-        <p class="workflow-card-desc">Context-aware scoring combines exploitability, business impact, and threat context for actionable prioritization.</p>
-      </article>
-      <article class="workflow-card" role="listitem">
-        <span class="workflow-number">6</span>
-        <h3 class="workflow-card-title">Reporting & Alerting</h3>
-        <p class="workflow-card-desc">Executive summaries, technical findings, and real-time alerts delivered via dashboard and integrations.</p>
-      </article>
-    </div>
-  </section>
-
-  <!-- Mission Statement -->
-  <section class="mission-section" aria-labelledby="mission-title">
-    <p class="mission-tagline" id="mission-title">Discover. Analyze. Prioritize. Protect.</p>
-    <p class="mission-text">"Identify security weaknesses before attackers exploit them."</p>
-  </section>
 </div>
+</div>
+{% endblock %}
 
-  <script>
-    // MCP HTTP Server Status
-    async function checkMcpHttpStatus() {
-      try {
-        const res = await fetch('{% url "scanner:mcp_http_status" %}', {
-          headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const data = await res.json();
-        updateMcpStatusDisplay(data);
-      } catch (e) {
-        console.error('Failed to check MCP status:', e);
-      }
+{% block extra_js %}
+<script>
+  (function () {
+    // ---- New scan form: prevent double submits, show progress ----
+    const form = document.getElementById('new-scan-form');
+    const submit = document.getElementById('scan-submit');
+    if (form && submit) {
+      form.addEventListener('submit', () => {
+        submit.disabled = true;
+        submit.setAttribute('aria-busy', 'true');
+        submit.textContent = 'Starting…';
+      });
+      // Restore the button if the user comes back with the browser's Back button
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) {
+          submit.disabled = false;
+          submit.removeAttribute('aria-busy');
+          submit.textContent = 'Start scan';
+        }
+      });
     }
 
-    function updateMcpStatusDisplay(data) {
-      const indicator = document.getElementById('mcp-status-indicator');
-      const urlDisplay = document.getElementById('mcp-status-url');
-      const stoppedState = document.getElementById('mcp-stopped-state');
-      const runningState = document.getElementById('mcp-running-state');
-      const urlDisplay2 = document.getElementById('mcp-url-display');
+    // ---- MCP server status ----
+    const indicator = document.getElementById('mcp-status-indicator');
+    const urlEl = document.getElementById('mcp-url-display');
+    const startBtn = document.getElementById('mcp-start-btn');
+    const copyBtn = document.getElementById('mcp-copy-btn');
+    const feedback = document.getElementById('mcp-feedback');
+    const statusUrl = '{% url "scanner:mcp_http_status" %}';
+    const startUrl = '{% url "scanner:mcp_http_start" %}';
 
+    function render(data) {
       if (data.running) {
-        document.getElementById('mcp-status-indicator').textContent = 'Running';
-        document.getElementById('mcp-status-indicator').className = 'status-badge status-running';
-        if (urlDisplay) {
-          urlDisplay.textContent = data.url;
-          urlDisplay.style.display = 'inline';
-        }
-        if (urlDisplay2) urlDisplay2.textContent = data.url;
-        if (stoppedState) stoppedState.style.display = 'none';
-        if (runningState) runningState.style.display = 'flex';
+        indicator.textContent = 'Running';
+        indicator.className = 'status-badge status-running';
+        urlEl.textContent = data.url;
+        urlEl.hidden = false;
+        copyBtn.hidden = false;
+        startBtn.hidden = true;
       } else {
-        document.getElementById('mcp-status-indicator').textContent = 'Stopped';
-        document.getElementById('mcp-status-indicator').className = 'status-badge status-failed';
-        if (urlDisplay) urlDisplay.style.display = 'none';
-        if (stoppedState) stoppedState.style.display = 'flex';
-        if (runningState) runningState.style.display = 'none';
+        indicator.textContent = 'Stopped';
+        indicator.className = 'status-badge status-cancelled';
+        urlEl.hidden = true;
+        copyBtn.hidden = true;
+        startBtn.hidden = false;
       }
     }
 
-    async function startMcpHttpServer() {
-      const btn = document.getElementById('mcp-start-btn');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: var(--sx-space-2);"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>Starting...';
-      }
-
+    async function check() {
       try {
-        const res = await fetch('{% url "scanner:mcp_http_start" %}', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
-          }
-        });
-        const data = await res.json();
-        
-        if (data.status === 'already_running') {
-          alert('MCP HTTP server is already running');
-        } else if (data.status === 'starting') {
-          // Poll for status
-          let attempts = 0;
-          const poll = setInterval(async () => {
-            if (attempts >= 10) {
-              clearInterval(poll);
-              return;
-            }
-            try {
-              const res = await fetch('{% url "scanner:mcp_http_status" %}');
-              const data = await res.json();
-              if (data.running) {
-                clearInterval(poll);
-                updateMcpStatusDisplay(data);
-              }
-            } catch (e) {}
-            attempts++;
-          }, 1000);
-        }
+        const res = await fetch(statusUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        render(await res.json());
       } catch (e) {
-        console.error('Failed to start MCP server:', e);
-        alert('Failed to start MCP server: ' + e.message);
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: var(--sx-space-2);"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Start MCP HTTP Server';
-        }
+        indicator.textContent = 'Unavailable';
+        indicator.className = 'status-badge status-unknown';
       }
     }
 
-    function copyMcpUrl() {
-      const urlDisplay = document.getElementById('mcp-url-display');
-      if (urlDisplay && urlDisplay.textContent) {
-        navigator.clipboard.writeText(urlDisplay.textContent).then(() => {
-          alert('MCP URL copied to clipboard!');
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      startBtn.setAttribute('aria-busy', 'true');
+      feedback.textContent = 'Starting…';
+      try {
+        const res = await fetch(startUrl, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '' },
         });
+        const data = await res.json().catch(() => ({ status: 'error', message: `HTTP ${res.status}` }));
+        if (data.status === 'error') {
+          feedback.textContent = data.message;
+          return;
+        }
+        for (let i = 0; i < 10; i++) {
+          await new Promise(r => setTimeout(r, 1000));
+          const s = await fetch(statusUrl).then(r => r.json()).catch(() => ({}));
+          if (s.running) { render(s); feedback.textContent = ''; return; }
+        }
+        feedback.textContent = 'Server did not come up — check the terminal running scanX.';
+      } catch (e) {
+        feedback.textContent = 'Could not reach scanX.';
+      } finally {
+        startBtn.disabled = false;
+        startBtn.removeAttribute('aria-busy');
       }
-    }
-
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      checkMcpHttpStatus();
-      // Poll every 30 seconds
-      setInterval(checkMcpHttpStatus, 30000);
     });
-  </script>
+
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(urlEl.textContent);
+        feedback.textContent = 'URL copied';
+      } catch (e) {
+        feedback.textContent = 'Copy failed — select the URL manually';
+      }
+      setTimeout(() => { feedback.textContent = ''; }, 2500);
+    });
+
+    check();
+    setInterval(check, 30000);
+  })();
+</script>
 {% endblock %}

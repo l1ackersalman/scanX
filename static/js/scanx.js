@@ -189,11 +189,12 @@
       lines.forEach(line => {
         const div = document.createElement('div');
         div.className = 'log-line';
-        div.innerHTML = this.formatLogLine(line);
+        div.innerHTML = this.formatLogLine(line);  // formatLogLine escapes the text
         fragment.appendChild(div);
       });
 
-      this.logContainer.appendChild(fragment);
+      // Lines go inside the <pre> so they keep its padding and wrapping
+      (this.logContainer.querySelector('pre') || this.logContainer).appendChild(fragment);
       this.scrollToBottom();
     }
 
@@ -202,7 +203,8 @@
       const escaped = line
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 
       // Detect log patterns and add classes
       let cssClass = 'log-info';
@@ -264,19 +266,20 @@
 
     updateStatus(status) {
       if (!this.statusContainer) return;
-
-      const statusMap = {
-        'pending': { label: 'Pending', class: 'status-pending' },
-        'running': { label: 'Running', class: 'status-running' },
-        'completed': { label: 'Completed', class: 'status-completed' },
-        'failed': { label: 'Failed', class: 'status-failed' },
-      };
-
-      const info = statusMap[status] || { label: status, class: '' };
-      this.statusContainer.innerHTML = `
-        <span class="status-badge ${info.class}">${info.label}</span>
-      `;
+      renderStatusBadge(this.statusContainer, status);
     }
+  }
+
+  const STATUS_LABELS = {
+    pending: 'Pending', running: 'Running', completed: 'Completed',
+    failed: 'Failed', cancelled: 'Cancelled',
+  };
+
+  function renderStatusBadge(container, status) {
+    const badge = document.createElement('span');
+    badge.className = 'status-badge' + (STATUS_LABELS[status] ? ` status-${status}` : '');
+    badge.textContent = STATUS_LABELS[status] || String(status);
+    container.replaceChildren(badge);
   }
 
   // =====================================================================
@@ -294,28 +297,11 @@
     const initialOffset = parseInt(logContainer.dataset.initialOffset || '0', 10);
     const initialStatus = logContainer.dataset.initialStatus || 'pending';
 
-    // Set initial status only if container exists
-    if (statusContainer) {
-      const statusMap = {
-        'pending': { label: 'Pending', class: 'status-pending' },
-        'running': { label: 'Running', class: 'status-running' },
-        'completed': { label: 'Completed', class: 'status-completed' },
-        'failed': { label: 'Failed', class: 'status-failed' },
-      };
-      const info = statusMap[initialStatus] || { label: initialStatus, class: '' };
-      statusContainer.innerHTML = `<span class="status-badge ${info.class}">${info.label}</span>`;
-    }
-
-    // Start streaming if not terminal
+    // Start streaming if not terminal (the countdown banner reloads the page when done)
     if (initialStatus === 'pending' || initialStatus === 'running') {
       const stream = new LogStream(scanId, logContainer, statusContainer || null, {
         initialOffset: initialOffset,
         pollInterval: 1500,
-        onComplete: (finalStatus) => {
-          console.log('Scan completed with status:', finalStatus);
-          // Auto-refresh after 3 seconds to show final state
-          setTimeout(() => window.location.reload(), 3000);
-        },
       });
       stream.start();
 

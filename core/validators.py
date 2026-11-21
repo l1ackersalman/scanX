@@ -6,6 +6,7 @@ to prevent shell injection and path traversal.
 """
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 
@@ -66,6 +67,23 @@ class DomainValidator:
 
 
 validate_domain = DomainValidator()
+
+
+def normalize_domain(value: str) -> str:
+    """
+    Reduce user input to a bare hostname so pasted URLs are accepted.
+    e.g. "https://user@Example.com:8443/path?q=1#x" -> "example.com".
+    Returns the trimmed input unchanged if no hostname can be extracted,
+    so the validator still reports the real problem.
+    """
+    value = (value or "").strip()
+    if not value:
+        return value
+    try:
+        host = urlsplit(value if "://" in value else f"//{value}").hostname
+    except ValueError:
+        return value
+    return host.rstrip(".") if host else value
 
 
 def sanitize_domain(domain: str) -> str:

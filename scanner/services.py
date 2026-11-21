@@ -4,6 +4,8 @@ scanX Scanner Services
 Core logic for executing the Bash scanner, streaming logs, and managing scan lifecycle.
 """
 import os
+import re
+import signal
 import subprocess
 import threading
 import time
@@ -11,15 +13,18 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from collections import defaultdict
+from collections import defaultdict, deque
 
 from django.conf import settings
+from django.db import connection
 from django.utils import timezone
 from django.core.paginator import Paginator
 
 from .models import Scan, Program
 
 logger = logging.getLogger(__name__)
+
+ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
 
 class ScanExecutor:
@@ -153,6 +158,70 @@ class ScanExecutor:
                 return item
         return None
 
+    def _kill_process_group(self) -> None:
+        """
+        Terminate the scanner and every tool it spawned (subfinder, httpx, ...).
+        The process runs in its own session, so its pgid == its pid.
+        """
+        proc = self.process
+        if not proc or proc.poll() is not None:
+            return
+        for sig, grace in ((signal.SIGTERM, 5), (signal.SIGKILL, 5)):
+            try:
+                os.killpg(proc.pid, sig)
+            except ProcessLookupError:
+                return
+            try:
+                proc.wait(timeout=grace)
+                return
+            except subprocess.TimeoutExpired:
+                continue
+
+    def _monitor(self) -> None:
+        """
+        Watchdog thread: enforces SCAN_TIMEOUT and reacts to cancellation
+        even when the scanner produces no output (e.g. a hung tool).
+        """
+        deadline = time.monotonic() + settings.SCAN_TIMEOUT
+        last_db_check = 0.0
+        try:
+            while self.process and self.process.poll() is None:
+                now = time.monotonic()
+                if self._stop_event.is_set():
+                    self._kill_process_group()
+                    return
+                if now >= deadline:
+                    self._timed_out = True
+                    self._kill_process_group()
+                    return
+                if now - last_db_check >= 2:
+                    last_db_check = now
+                    status = (
+                        Scan.objects.filter(id=self.scan.id)
+                        .values_list("status", flat=True)
+                        .first()
+                    )
+                    if status == Scan.Status.CANCELLED:
+                        self._cancelled = True
+                        self._kill_process_group()
+                        return
+                time.sleep(0.5)
+        except Exception:
+            logger.exception("Scan monitor failed; killing scanner")
+            self._kill_process_group()
+        finally:
+            connection.close()
+
+    @staticmethod
+    def _failure_reason(tail) -> str:
+        """Pick the most useful line from the end of the scanner output."""
+        lines = [ANSI_RE.sub("", l).strip() for l in tail]
+        lines = [l for l in lines if l]
+        for line in reversed(lines):
+            if line.startswith(("[!]", "[✘]")) or "error" in line.lower():
+                return line
+        return lines[-1] if lines else ""
+
     def run(self) -> None:
         """
         Main entry point: execute the scan.
@@ -180,54 +249,56 @@ class ScanExecutor:
         cmd = [str(script_path), self.scan.domain]
 
         # Open log file for writing (append mode, line buffered)
-        log_file = open(self.log_file_path, "a", buffering=1)
+        log_file = open(self.log_file_path, "a", buffering=1, encoding="utf-8")
+        self._timed_out = False
+        self._cancelled = False
+        tail = deque(maxlen=20)
 
         try:
             logger.info(f"Executing: {' '.join(cmd)} in {cwd}")
 
-            # Start process with pipes for stdout/stderr
+            # Own session so cancel/timeout can kill the whole tool tree
             self.process = subprocess.Popen(
                 cmd,
                 cwd=str(cwd),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,  # Merge stderr into stdout
                 text=True,
+                encoding="utf-8",
+                errors="replace",  # tool output is not guaranteed UTF-8
                 bufsize=1,  # Line buffered
                 env=env,
+                start_new_session=True,
             )
+
+            monitor = threading.Thread(target=self._monitor, daemon=True)
+            monitor.start()
 
             # Stream output to log file in real-time
             assert self.process.stdout is not None
             for line in self.process.stdout:
-                if self._stop_event.is_set():
-                    self.process.terminate()
-                    break
-                # Check if scan was cancelled via web interface
-                self.scan.refresh_from_db()
-                if self.scan.status == Scan.Status.CANCELLED:
-                    self.process.terminate()
-                    break
                 log_file.write(line)
-                log_file.flush()
+                tail.append(line)
 
-            # Wait for completion with timeout
-            try:
-                returncode = self.process.wait(timeout=settings.SCAN_TIMEOUT)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
+            returncode = self.process.wait()
+            monitor.join(timeout=15)
+
+            if self._timed_out:
                 error = f"Scan timed out after {settings.SCAN_TIMEOUT} seconds"
                 logger.error(error)
                 log_file.write(f"\n[ERROR] {error}\n")
                 self.scan.mark_failed(error)
                 return
 
-            log_file.close()
-
             # Check if scan was cancelled via web interface
             self.scan.refresh_from_db()
-            if self.scan.status == Scan.Status.CANCELLED:
+            if self._cancelled or self.scan.status == Scan.Status.CANCELLED:
+                log_file.write("\n[!] Scan cancelled by user\n")
                 logger.info(f"Scan {self.scan.id} was cancelled")
+                return
+
+            if self._stop_event.is_set():
+                self.scan.mark_failed("Scan interrupted: worker shutting down")
                 return
 
             if returncode == 0:
@@ -245,12 +316,17 @@ class ScanExecutor:
                     self.scan.mark_failed(error)
             else:
                 error = f"Scanner exited with code {returncode}"
+                reason = self._failure_reason(tail)
+                if reason:
+                    error = f"{error}: {reason}"
                 logger.error(error)
                 self.scan.mark_failed(error)
 
         except Exception as e:
             error = f"Scan execution failed: {type(e).__name__}: {e}"
             logger.exception(error)
+            self._kill_process_group()
+            self.scan.refresh_from_db()
             if not self.scan.is_terminal:
                 self.scan.mark_failed(error)
         finally:
@@ -258,14 +334,9 @@ class ScanExecutor:
                 log_file.close()
 
     def stop(self):
-        """Request graceful stop of the running scan."""
+        """Request graceful stop of the running scan (and its child tools)."""
         self._stop_event.set()
-        if self.process and self.process.poll() is None:
-            self.process.terminate()
-            # Give it a moment to terminate gracefully
-            time.sleep(2)
-            if self.process.poll() is None:
-                self.process.kill()
+        self._kill_process_group()
 
 
 def run_scan_in_background(scan: Scan) -> threading.Thread:
@@ -295,11 +366,18 @@ def get_log_lines(scan_id: str, since_offset: int = 0) -> tuple[list[str], int, 
         return [], since_offset, scan.status
 
     try:
-        with open(log_path, "r") as f:
+        # Binary mode: offsets are plain byte positions, so a bogus `since`
+        # value can't wedge the reader on a half-decoded character.
+        with open(log_path, "rb") as f:
+            size = f.seek(0, os.SEEK_END)
+            if since_offset < 0 or since_offset > size:
+                since_offset = 0
             f.seek(since_offset)
-            lines = f.readlines()
-            new_offset = f.tell()
-        return [line.rstrip("\n") for line in lines], new_offset, scan.status
+            data = f.read()
+        # Only hand out complete lines; a partial last line comes next poll.
+        end = data.rfind(b"\n") + 1
+        text = data[:end].decode("utf-8", errors="replace")
+        return text.splitlines(), since_offset + end, scan.status
     except Exception as e:
         logger.error(f"Failed to read log for {scan_id}: {e}")
         return [], since_offset, scan.status

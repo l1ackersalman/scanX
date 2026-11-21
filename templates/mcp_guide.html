@@ -1,201 +1,411 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}MCP Guide — scanX{% endblock %}
+{% block title %}Connect an AI agent (MCP) — scanX{% endblock %}
+
+{% block extra_css %}
+<style>
+  .mcp { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sx-space-6); max-width: 1100px; }
+  .mcp-head h1 { font-size: clamp(1.5rem, 2.4vw, 2rem); margin: 0 0 var(--sx-space-2); }
+  .mcp-head p { margin: 0; max-width: 68ch; color: var(--sx-text-secondary); }
+
+  /* Connect panel — the dominant element */
+  .connect {
+    background: var(--sx-surface);
+    border: 1px solid var(--sx-border);
+    border-top: 3px solid var(--sx-accent);
+    border-radius: var(--sx-radius-card);
+    padding: var(--sx-space-5);
+  }
+  .connect h2 { margin: 0 0 var(--sx-space-1); font-size: var(--sx-text-xl); }
+  .connect > p { margin: 0 0 var(--sx-space-4); color: var(--sx-text-secondary); font-size: var(--sx-text-sm); }
+  .connect-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) auto; gap: var(--sx-space-4); align-items: end; }
+  @media (max-width: 860px) { .connect-form { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: var(--sx-space-1); min-width: 0; }
+  .field .form-input { height: 44px; font-size: var(--sx-text-base); }
+  .field-hint { margin: 0; font-size: var(--sx-text-xs); color: var(--sx-text-secondary); }
+  .btn-connect { height: 44px; padding: 0 var(--sx-space-6); font-size: var(--sx-text-base); }
+
+  .endpoint-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sx-space-2); margin-top: var(--sx-space-4); padding-top: var(--sx-space-4); border-top: 1px solid var(--sx-border); font-size: var(--sx-text-sm); color: var(--sx-text-secondary); }
+  .endpoint-row code { color: var(--sx-text-primary); }
+
+  /* One-time token reveal */
+  .token-panel { margin-top: var(--sx-space-4); padding: var(--sx-space-4); border: 1px solid rgba(53, 183, 121, 0.45); border-radius: var(--sx-radius-control); background: var(--sx-background); }
+  .token-panel h3 { margin: 0 0 var(--sx-space-1); font-family: var(--sx-font-sans); font-size: var(--sx-text-base); color: var(--sx-success); }
+  .token-panel p { margin: 0 0 var(--sx-space-3); font-size: var(--sx-text-sm); color: var(--sx-text-secondary); }
+  .secret { display: flex; gap: var(--sx-space-2); align-items: stretch; }
+  .secret code { flex: 1; min-width: 0; padding: var(--sx-space-2) var(--sx-space-3); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); background: var(--sx-surface); font-family: var(--sx-font-mono); font-size: var(--sx-text-sm); overflow-wrap: anywhere; }
+
+  /* Docs */
+  .doc h2 { font-size: var(--sx-text-xl); margin: 0 0 var(--sx-space-3); }
+  .doc h3 { font-family: var(--sx-font-sans); font-size: var(--sx-text-base); font-weight: 600; margin: var(--sx-space-4) 0 var(--sx-space-2); }
+  .doc p, .doc li { color: var(--sx-text-secondary); line-height: 1.65; max-width: 75ch; }
+  .doc p { margin: 0 0 var(--sx-space-3); }
+  .doc strong { color: var(--sx-text-primary); }
+  .doc code { font-family: var(--sx-font-mono); font-size: 0.85em; color: var(--sx-text-primary); }
+  .doc ol, .doc ul { margin: 0 0 var(--sx-space-3); padding-left: var(--sx-space-5); }
+
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0; padding: 0; list-style: none; border: 1px solid var(--sx-border); border-radius: var(--sx-radius-card); counter-reset: step; }
+  .flow li { counter-increment: step; padding: var(--sx-space-4); border-left: 1px solid var(--sx-border); font-size: var(--sx-text-sm); max-width: none; }
+  .flow li:first-child { border-left: none; }
+  .flow li::before { content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; margin-bottom: var(--sx-space-2); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); font-size: var(--sx-text-xs); font-weight: 600; color: var(--sx-text-primary); }
+  .flow strong { display: block; margin-bottom: var(--sx-space-1); }
+  @media (max-width: 860px) { .flow { grid-template-columns: 1fr 1fr; } .flow li:nth-child(3) { border-left: none; } .flow li:nth-child(n+3) { border-top: 1px solid var(--sx-border); } }
+
+  .client { border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); background: var(--sx-surface); margin-bottom: var(--sx-space-2); }
+  .client summary { cursor: pointer; padding: var(--sx-space-3) var(--sx-space-4); font-weight: 600; color: var(--sx-text-primary); list-style: none; display: flex; justify-content: space-between; gap: var(--sx-space-3); }
+  .client summary::-webkit-details-marker { display: none; }
+  .client summary::after { content: "+"; color: var(--sx-text-secondary); font-weight: 400; }
+  .client[open] summary::after { content: "−"; }
+  .client summary span { font-weight: 400; font-size: var(--sx-text-sm); color: var(--sx-text-secondary); margin-left: auto; }
+  .client-body { padding: 0 var(--sx-space-4) var(--sx-space-4); }
+  .client-body p { font-size: var(--sx-text-sm); }
+  .snippet { position: relative; }
+  .snippet pre { margin: 0 0 var(--sx-space-2); padding: var(--sx-space-3); padding-right: 5.5rem; background: var(--sx-background); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); overflow-x: auto; font-family: var(--sx-font-mono); font-size: var(--sx-text-xs); line-height: 1.6; color: var(--sx-text-primary); white-space: pre; }
+  .snippet .copy { position: absolute; top: var(--sx-space-2); right: var(--sx-space-2); }
+
+  .prompts { display: grid; gap: var(--sx-space-2); margin: 0; padding: 0; list-style: none; }
+  .prompts li { padding: var(--sx-space-3) var(--sx-space-4); border-left: 3px solid var(--sx-accent); background: var(--sx-surface); border-radius: 0 var(--sx-radius-control) var(--sx-radius-control) 0; color: var(--sx-text-primary); font-size: var(--sx-text-sm); max-width: none; }
+
+  .tools-table td { vertical-align: top; }
+  .tools-table td:first-child { white-space: nowrap; }
+  .kind { font-size: var(--sx-text-xs); padding: 0.0625rem 0.375rem; border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); color: var(--sx-text-secondary); white-space: nowrap; }
+  .kind-write { color: var(--sx-warning); border-color: rgba(230, 162, 60, 0.45); }
+
+  .conn-table .num { font-variant-numeric: tabular-nums; }
+  .muted { color: var(--sx-text-secondary); }
+  .toc { display: flex; flex-wrap: wrap; gap: var(--sx-space-1) var(--sx-space-4); margin: var(--sx-space-3) 0 0; padding: 0; list-style: none; font-size: var(--sx-text-sm); }
+  section[id] { scroll-margin-top: var(--sx-space-6); }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
-  <!-- Hero Section -->
-  <section class="hero-section" style="margin-bottom: var(--sx-space-8);">
-    <div class="hero-content">
-      <h1 class="hero-title">MCP Connection Guide</h1>
-      <p class="hero-subtitle">Connect AI agents to ScanX using HTTP/SSE (no SSH required).</p>
-    </div>
-  </section>
+<div class="mcp">
 
-  <!-- Method 3: HTTP/SSE (No SSH Required) -->
-  <section class="card" style="margin-bottom: var(--sx-space-6);">
-    <div class="card-head">
-      <h2 class="card-title" style="margin: 0;">Method 3: HTTP/SSE (No SSH Required)</h2>
-    </div>
-    <div class="card-body">
-      <p style="margin: 0 0 var(--sx-space-4); font-size: var(--sx-text-base); line-height: 1.6;">
-        Run MCP over HTTP/SSE using <code>mcp-remote</code> (requires Node.js). No SSH keys needed!
-      </p>
+  <header class="mcp-head">
+    <h1>AI analysis</h1>
+    <p>Let an AI read your scan results, map possible attack vectors and save a report to <a href="{% url 'scanner:reports' %}">Reports</a>. Pick whichever way suits you — all three use the same scanX tools and data.</p>
+    <ul class="toc" aria-label="On this page">
+      <li><a href="#ways">Three ways</a></li>
+      <li><a href="#builtin">No AI? Use ours</a></li>
+      <li><a href="#connect">Connect</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#setup">MCP setup</a></li>
+      <li><a href="#rest">REST API</a></li>
+      <li><a href="#use">Ask for a report</a></li>
+      <li><a href="#tools">Tools</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ul>
+  </header>
 
-      <!-- On Your VPS - Run HTTP MCP Server -->
-      <div style="background: var(--sx-background); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); padding: var(--sx-space-4); margin-bottom: var(--sx-space-4);">
-        <strong>On Your VPS - Run HTTP MCP Server:</strong>
-        <pre style="background: var(--sx-background); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); padding: var(--sx-space-3); overflow-x: auto; margin: var(--sx-space-2) 0; font-family: var(--sx-font-mono); font-size: var(--sx-text-sm);"><code># On your VPS - run HTTP MCP server on port 8001
-python manage.py mcp_server_http --port 8001
-
-# Runs on 0.0.0.0:8001, accessible from anywhere
-# MCP endpoint: http://your-vps-ip:8001/mcp</code></pre>
-      </div>
-
-      <div style="margin-bottom: var(--sx-space-4);">
-        <strong>Friend's Config (uses <code>mcp-remote</code>):</strong>
-        <pre style="background: var(--sx-background); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); padding: var(--sx-space-4); overflow-x: auto; margin: var(--sx-space-2) 0; font-family: var(--sx-font-mono); font-size: var(--sx-text-sm);"><code>{
-  "mcpServers": {
-    "scanx": {
-      "command": "npx",
-      "args": ["mcp-remote", "http://your-vps-ip:8001/mcp"]
-    }
-  }</code></pre>
-        <p style="margin: var(--sx-space-2) 0 0; font-size: var(--sx-text-sm); color: var(--sx-text-secondary);">Requires <code>npm install -g mcp-remote</code> on friend's machine.</p>
-      </div>
-
-      <div style="padding: var(--sx-space-3); background: var(--sx-background); border-radius: var(--sx-radius-control); border-left: 4px solid var(--sx-accent);">
-        <strong style="color: var(--sx-accent);">Quick Steps for Your Friend</strong>
-        <ol style="margin: var(--sx-space-2) 0 0; padding-left: var(--sx-space-5); font-size: var(--sx-text-sm); line-height: 1.8;">
-          <li>Install Node.js if needed: <code>winget install OpenJS.NodeJS</code> (Windows) / <code>brew install node</code> (macOS) / <code>sudo apt install nodejs npm</code> (Linux)</li>
-          <li>Install mcp-remote: <code>npm install -g mcp-remote</code></li>
-          <li>Add the JSON config above to their AI client (opencode, claude code, Cursor, Continue)</li>
-          <li>Restart their AI client</li>
-        </ol>
-      </div>
-    </div>
-  </section>
-
-  <!-- Available Tools -->
-  <section class="card" style="margin-bottom: var(--sx-space-6);">
-    <div class="card-head">
-      <h2 class="card-title" style="margin: 0;">Available MCP Tools</h2>
-    </div>
-    <div class="card-body">
-      <p style="margin: 0 0 var(--sx-space-4);">Once connected, AI agents can use these tools:</p>
+  <!-- ================= Three ways ================= -->
+  <section class="doc" id="ways" aria-labelledby="ways-title">
+    <h2 id="ways-title">Three ways to analyse your scans</h2>
+    <div class="card">
       <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Tool</th>
-              <th>Description</th>
-              <th>Example Prompt</th>
-            </tr>
-          </thead>
+        <table class="table table-auto">
+          <thead><tr><th scope="col">Way</th><th scope="col">Whose AI</th><th scope="col">Best for</th><th scope="col">Setup</th></tr></thead>
           <tbody>
-            <tr>
-              <td class="table-cell-primary"><code>analyze_attack_surface</code></td>
-              <td>Full attack surface analysis for a domain</td>
-              <td>"Analyze attack surface for eastdelta.edu.bd"</td>
-            </tr>
-            <tr>
-              <td class="table-cell-primary"><code>get_technology_exposure</code></td>
-              <td>Find all subdomains using a specific technology</td>
-              <td>"Find all subdomains using WordPress"</td>
-            </tr>
-            <tr>
-              <td class="table-cell-primary"><code>get_organization_scans</code></td>
-              <td>List all scans for an organization</td>
-              <td>"Show all scans for NASA"</td>
-            </tr>
-            <tr>
-              <td class="table-cell-primary"><code>get_scan_details</code></td>
-              <td>Full scan results (subdomains, HTTP, tech)</td>
-              <td>"Get details for scan UUID..."</td>
-            </tr>
-            <tr>
-              <td class="table-cell-primary"><code>search_subdomains</code></td>
-              <td>Pattern search across subdomains</td>
-              <td>"Find all api.* subdomains"</td>
-            </tr>
-            <tr>
-              <td class="table-cell-primary"><code>create_report</code></td>
-              <td>Generate AI analysis report (saved in Reports)</td>
-              <td>"Generate vulnerability report for scan UUID..."</td>
-            </tr>
+            <tr><td class="wrap"><a href="#builtin"><strong>scanX AI</strong></a></td><td class="wrap">Ours, on the scanX server</td><td class="wrap">A quick report without any AI account</td><td class="wrap">None — one button</td></tr>
+            <tr><td class="wrap"><a href="#setup"><strong>MCP</strong></a></td><td class="wrap">Yours: Claude, Cursor, VS Code Copilot…</td><td class="wrap">Chatting with your data and steering the analysis</td><td class="wrap">Connect + paste one config</td></tr>
+            <tr><td class="wrap"><a href="#rest"><strong>REST API</strong></a></td><td class="wrap">Yours: any agent, framework or script</td><td class="wrap">Custom agents (LangChain, n8n, GPT Actions, your own code)</td><td class="wrap">Connect + HTTP calls</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <!-- Available Resources -->
-  <section class="card" style="margin-bottom: var(--sx-space-6);">
-    <div class="card-head">
-      <h2 class="card-title" style="margin: 0;">Available Resources</h2>
+  <!-- ================= Built-in AI ================= -->
+  <div id="builtin">
+    {% include "partials/ai_report_picker.html" with picker_title="No AI of your own? Use scanX AI" next_url=request.path %}
+  </div>
+
+  <!-- ================= Connect ================= -->
+  <section class="connect" id="connect" aria-labelledby="connect-title">
+    <h2 id="connect-title">Connect your own agent</h2>
+    <p>For MCP and the REST API. Pick the organization whose scans the agent may read; you get a private access token that works for both.</p>
+
+    {% if programs %}
+    <form method="post" action="{% url 'scanner:mcp_connect' %}" class="connect-form" id="connect-form">
+      {% csrf_token %}
+      <div class="field">
+        <label for="mcp-program" class="form-label">Organization</label>
+        <select id="mcp-program" name="program" class="form-input" required>
+          {% if programs|length != 1 %}<option value="">Choose an organization</option>{% endif %}
+          {% for p in programs %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="mcp-label" class="form-label">Name this connection <span class="muted">(optional)</span></label>
+        <input id="mcp-label" name="label" class="form-input" maxlength="100" placeholder="e.g. Claude on my laptop" autocomplete="off">
+      </div>
+      <button type="submit" class="btn-primary btn-connect" id="connect-btn">Connect</button>
+    </form>
+    {% else %}
+      <div class="notice notice-neutral" role="note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p class="notice-title">Add an organization and run a scan first</p>
+        <p class="notice-body">An agent connects to one organization's scans.</p>
+        <div class="notice-actions"><a href="{% url 'scanner:organizations_add' %}" class="btn-primary">Add organization</a></div>
+      </div>
+    {% endif %}
+
+    {% if new_token %}
+    <div class="token-panel" role="status" aria-live="polite">
+      <h3>Connected to {{ new_token.program }}</h3>
+      <p>Copy this token now — it is shown <strong>only once</strong>. The setup snippets below already include it.</p>
+      <div class="secret">
+        <code id="new-token">{{ new_token.token }}</code>
+        <button type="button" class="btn-ghost btn-sm" data-copy="new-token">Copy token</button>
+      </div>
     </div>
-    <div class="card-body">
-      <p style="margin: 0 0 var(--sx-space-4);">Read-only data resources accessible via MCP:</p>
-      <ul style="margin: 0; padding-left: var(--sx-space-5); line-height: 2;">
-        <li><code>scanx://organizations</code> — All organizations with types</li>
-        <li><code>scanx://scans/recent</code> — 20 most recent scans</li>
-        <li><code>scanx://technologies</code> — All detected technologies</li>
-      </ul>
+    {% endif %}
+
+    <div class="endpoint-row">
+      <span>Server URL</span>
+      <code id="endpoint-url">{{ endpoint_url }}</code>
+      <button type="button" class="btn-ghost btn-sm" data-copy="endpoint-url">Copy</button>
     </div>
   </section>
 
-  <!-- Reports Section -->
-  <section class="card" style="margin-bottom: var(--sx-space-6);">
-    <div class="card-head">
-      <h2 class="card-title" style="margin: 0;">Viewing Generated Reports</h2>
-    </div>
-    <div class="card-body">
-      <p style="margin: 0 0 var(--sx-space-4);">All AI-generated reports are stored in the <strong>Reports</strong> section (accessible from the sidebar):</p>
-      <ul style="margin: 0; padding-left: var(--sx-space-5); line-height: 2;">
-        <li>Navigate to <strong>Reports</strong> in the sidebar</li>
-        <li>Click <strong>View</strong> to read the full markdown report</li>
-        <li>Click <strong>Download</strong> to save as <code>.md</code> file</li>
-        <li>Reports include: Summary, Analysis, Structured Findings (JSON)</li>
-      </ul>
+  {% if my_connections %}
+  <section id="connections" aria-labelledby="conn-title" class="doc">
+    <h2 id="conn-title">Your connections</h2>
+    <p>Agents you connected from this browser. Disconnect one to stop its token working immediately.</p>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table table-auto conn-table">
+          <thead><tr><th scope="col">Name</th><th scope="col">Organization</th><th scope="col">Token</th><th scope="col">Last used</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead>
+          <tbody>
+            {% for c in my_connections %}
+            <tr>
+              <td class="wrap">{{ c.label }}</td>
+              <td class="wrap">{{ c.program.name }}</td>
+              <td><code>{{ c.prefix }}…</code></td>
+              <td>{% if c.last_used_at %}{{ c.last_used_at|timesince }} ago{% else %}<span class="muted">never</span>{% endif %}</td>
+              <td>
+                {% if c.is_active %}
+                <form method="post" action="{% url 'scanner:mcp_revoke' c.id %}" onsubmit="return confirm('Disconnect {{ c.label|escapejs }}? Its token stops working.');" style="margin:0">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-ghost btn-sm">Disconnect</button>
+                </form>
+                {% else %}<span class="status-badge status-cancelled">Disconnected</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
+  {% endif %}
 
-  <!-- Troubleshooting -->
-  <section class="card" style="margin-top: var(--sx-space-6);">
-    <div class="card-head">
-      <h2 class="card-title" style="margin: 0;">Troubleshooting</h2>
-    </div>
-    <div class="card-body">
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--sx-space-4);">
-        <div class="card" style="background: var(--sx-surface-hover); border: 1px solid var(--sx-border);">
-          <div class="card-body" style="padding: var(--sx-space-4);">
-            <h4 style="margin: 0 0 var(--sx-space-2); color: var(--sx-warning);">⚠️ Connection Refused</h4>
-            <ul style="margin: 0; padding-left: var(--sx-space-5); font-size: var(--sx-text-sm); line-height: 1.8;">
-              <li>Check VPS port 8001 open: <code>ufw allow 8001/tcp</code></li>
-              <li>Verify server running: <code>curl http://your-vps-ip:8001/mcp</code></li>
-              <li>Check server logs for errors</li>
-            </ul>
-          </div>
-        </div>
-        <div class="card" style="background: var(--sx-surface-hover); border: 1px solid var(--sx-border);">
-          <div class="card-body" style="padding: var(--sx-space-4);">
-            <h4 style="margin: 0 0 var(--sx-space-2); color: var(--sx-warning);">⚠️ Tools Not Appearing</h4>
-            <ul style="margin: 0; padding-left: var(--sx-space-5); font-size: var(--sx-text-sm); line-height: 1.8;">
-              <li>Restart AI client completely</li>
-              <li>Check MCP server is running</li>
-              <li>Verify config file path is correct</li>
-              <li>Check client logs for errors</li>
-            </ul>
-          </div>
-        </div>
-        <div class="card" style="background: var(--sx-surface-hover); border: 1px solid var(--sx-border);">
-          <div class="card-body" style="padding: var(--sx-space-4);">
-            <h4 style="margin: 0 0 var(--sx-space-2); color: var(--sx-warning);">⚠️ Reports Not Generating</h4>
-            <ul style="margin: 0; padding-left: var(--sx-space-5); font-size: var(--sx-text-sm); line-height: 1.8;">
-              <li>Ensure scan is <strong>completed</strong> status</li>
-              <li>Check scan has <code>httpx_results</code></li>
-              <li>Check Django logs for errors</li>
-              <li>Run tests: <code>python manage.py test</code></li>
-            </ul>
-          </div>
-        </div>
+  <!-- ================= How it works ================= -->
+  <section class="doc" id="how" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol class="flow">
+      <li><strong>Scan</strong>Run a scan of your domain from the <a href="{% url 'scanner:overview' %}">Overview</a>.</li>
+      <li><strong>Connect</strong>Click Connect above and paste the setup into your AI client.</li>
+      <li><strong>Ask</strong>Ask your agent for an attack-vector report. It reads your scan data through scanX's tools.</li>
+      <li><strong>Review</strong>The finished report appears on <a href="{% url 'scanner:reports' %}">Reports</a>, ready to read or download.</li>
+    </ol>
+    <p style="margin-top: var(--sx-space-3)">scanX speaks the <strong>Model Context Protocol (MCP)</strong>, an open standard that lets AI apps call tools. Your agent runs on your side with your own AI subscription; scanX only answers its tool calls. scanX never contacts an AI provider and needs no AI API key.</p>
+  </section>
+
+  <!-- ================= Setup ================= -->
+  <section class="doc" id="setup" aria-labelledby="setup-title">
+    <h2 id="setup-title">Set up your AI client</h2>
+    <p>Choose your client. {% if new_token %}Your new token is already filled in.{% else %}Replace <code>YOUR_TOKEN</code> with the token you get from Connect.{% endif %} Restart the client after changing its settings.</p>
+
+    {% with token=new_token.token|default:"YOUR_TOKEN" %}
+    <details class="client" open>
+      <summary>Claude Code <span>terminal</span></summary>
+      <div class="client-body">
+        <p>Run once in a terminal:</p>
+        <div class="snippet"><pre><code id="cfg-claude-code">claude mcp add --transport http {{ server_name }} {{ endpoint_url }} --header "Authorization: Bearer {{ token }}"</code></pre><button type="button" class="btn-ghost btn-sm copy" data-copy="cfg-claude-code">Copy</button></div>
+        <p>Check it with <code>claude mcp list</code> — scanx should show as connected.</p>
+      </div>
+    </details>
+
+    <details class="client">
+      <summary>Cursor <span>~/.cursor/mcp.json</span></summary>
+      <div class="client-body">
+        <p>Cursor Settings → MCP → Add new MCP server, or edit <code>~/.cursor/mcp.json</code>:</p>
+        <div class="snippet"><pre><code id="cfg-cursor">{
+  "mcpServers": {
+    "{{ server_name }}": {
+      "url": "{{ endpoint_url }}",
+      "headers": { "Authorization": "Bearer {{ token }}" }
+    }
+  }
+}</code></pre><button type="button" class="btn-ghost btn-sm copy" data-copy="cfg-cursor">Copy</button></div>
+      </div>
+    </details>
+
+    <details class="client">
+      <summary>VS Code (GitHub Copilot agent mode) <span>.vscode/mcp.json</span></summary>
+      <div class="client-body">
+        <p>Create <code>.vscode/mcp.json</code> in your workspace (or run <em>MCP: Add Server</em>):</p>
+        <div class="snippet"><pre><code id="cfg-vscode">{
+  "servers": {
+    "{{ server_name }}": {
+      "type": "http",
+      "url": "{{ endpoint_url }}",
+      "headers": { "Authorization": "Bearer {{ token }}" }
+    }
+  }
+}</code></pre><button type="button" class="btn-ghost btn-sm copy" data-copy="cfg-vscode">Copy</button></div>
+      </div>
+    </details>
+
+    <details class="client">
+      <summary>Claude Desktop <span>needs Node.js 18+</span></summary>
+      <div class="client-body">
+        <p>Settings → Developer → Edit Config, then add this to <code>claude_desktop_config.json</code>. It uses the small <code>mcp-remote</code> bridge, downloaded automatically by <code>npx</code>:</p>
+        <div class="snippet"><pre><code id="cfg-desktop">{
+  "mcpServers": {
+    "{{ server_name }}": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "{{ endpoint_url }}", "--header", "Authorization:${SCANX_AUTH}"],
+      "env": { "SCANX_AUTH": "Bearer {{ token }}" }
+    }
+  }
+}</code></pre><button type="button" class="btn-ghost btn-sm copy" data-copy="cfg-desktop">Copy</button></div>
+        <p>Fully quit and reopen Claude Desktop. On Windows, if <code>npx</code> is not found, use <code>"command": "cmd"</code> and put <code>"/c", "npx"</code> at the start of <code>args</code>.</p>
+      </div>
+    </details>
+
+    <details class="client">
+      <summary>Any other MCP client</summary>
+      <div class="client-body">
+        <p>Add a remote server using the <strong>Streamable HTTP</strong> transport:</p>
+        <ul>
+          <li>URL: <code>{{ endpoint_url }}</code></li>
+          <li>Header: <code>Authorization: Bearer {{ token }}</code></li>
+        </ul>
+        <p>Clients that only support local (stdio) servers can use <code>npx -y mcp-remote</code> as shown for Claude Desktop.</p>
+      </div>
+    </details>
+    {% endwith %}
+  </section>
+
+  <!-- ================= REST API ================= -->
+  <section class="doc" id="rest" aria-labelledby="rest-title">
+    <h2 id="rest-title">REST API — for agents without MCP</h2>
+    <p>The same tools over plain HTTPS and JSON, with the same token from <a href="#connect">Connect</a>. Use it from your own agent code, LangChain, n8n, Zapier, a GPT Action, or <code>curl</code>.</p>
+    {% with token=new_token.token|default:"YOUR_TOKEN" %}
+    <ul>
+      <li><code>GET {{ api_base }}tools</code> — every tool with its JSON Schema, ready to hand to any model's function calling.</li>
+      <li><code>POST {{ api_base }}tools/&lt;name&gt;</code> — run a tool; the JSON body is its arguments. Answers <code>{"data", "meta"}</code>; errors come back as HTTP 422 with <code>meta.message</code>.</li>
+      <li><code>GET {{ api_base }}openapi.json</code> — OpenAPI 3.1 spec; import it into GPT Actions, Postman or an OpenAPI agent toolkit.</li>
+    </ul>
+    <h3>Try it</h3>
+    <div class="snippet"><pre><code id="cfg-curl">curl -s {{ api_base }}tools/list_scans \
+  -H "Authorization: Bearer {{ token }}" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "completed", "limit": 5}'</code></pre><button type="button" class="btn-ghost btn-sm copy" data-copy="cfg-curl">Copy</button></div>
+    <h3>Minimal agent loop (Python, any AI provider)</h3>
+    <p>Fetch the tools, give them to your model as functions, and forward each call to scanX:</p>
+    <div class="snippet"><pre><code id="cfg-python">import requests
+
+SCANX = "{{ api_base }}"
+HEADERS = {"Authorization": "Bearer {{ token }}"}
+
+tools = requests.get(SCANX + "tools", headers=HEADERS).json()["data"]
+# -> give `tools` (name, description, input_schema) to your model as functions
+
+def call_scanx(name, arguments):
+    r = requests.post(SCANX + "tools/" + name, json=arguments, headers=HEADERS)
+    return r.json()          # {"data": ..., "meta": {...}} - send back to the model
+
+# Finish with: call_scanx("save_report", {"scan_id": ..., "title": ..., "content": ...})</code></pre><button type="button" class="btn-ghost btn-sm copy" data-copy="cfg-python">Copy</button></div>
+    <p>Reports saved through the API show on <a href="{% url 'scanner:reports' %}">Reports</a> as “(REST API)”.</p>
+    {% endwith %}
+  </section>
+
+  <!-- ================= Use ================= -->
+  <section class="doc" id="use" aria-labelledby="use-title">
+    <h2 id="use-title">Ask for a report</h2>
+    <p>Once connected, talk to your agent normally. It decides which scanX tools to call. Examples:</p>
+    <ul class="prompts">
+      <li>Using scanX, analyse my latest completed scan, map the possible attack vectors and save an attack vector report.</li>
+      <li>Which hosts are new since the previous scan, and do any of them look like admin, staging or login pages?</li>
+      <li>List the technologies scanX found and flag any that disclose a version number.</li>
+      <li>Find hosts with CNAMEs pointing to third-party services that could be at risk of subdomain takeover.</li>
+    </ul>
+    <h3>Built-in prompt: <code>attack_vector_report</code></h3>
+    <p>scanX ships a ready-made prompt that walks the agent through a full analysis — exposed panels, dev/staging hosts, directory listings, version-disclosing tech, takeover candidates — maps each finding to MITRE ATT&amp;CK, rates it, and saves the report. In Claude Code type <code>/mcp__{{ server_name }}__attack_vector_report</code>; in Claude Desktop use the <strong>+</strong> menu → scanx. Other clients list it under MCP prompts.</p>
+    <p>Reports saved by agents are listed on <a href="{% url 'scanner:reports' %}">Reports</a> with the agent's name, and can be downloaded as Markdown.</p>
+  </section>
+
+  <!-- ================= Tools ================= -->
+  <section class="doc" id="tools" aria-labelledby="tools-title">
+    <h2 id="tools-title">Tools your agent can use</h2>
+    <p>Every tool answers in the same shape — <code>{"data": …, "meta": {"status", "message", "total", "hasMore", "nextCursor"}}</code> — and long lists come in pages. Only <code>save_report</code> writes anything; nothing can start, stop or delete scans.</p>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table table-auto tools-table">
+          <thead><tr><th scope="col">Tool</th><th scope="col">Access</th><th scope="col">What it does</th></tr></thead>
+          <tbody>
+            {% for name, spec in tools.items %}
+            <tr>
+              <td><code>{{ name }}</code></td>
+              <td>{% if spec.annotations.readOnlyHint %}<span class="kind">read</span>{% else %}<span class="kind kind-write">write</span>{% endif %}</td>
+              <td class="wrap">{{ spec.description }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
 
-  <!-- Security Note -->
-  <section class="card" style="margin-top: var(--sx-space-6); border-left: 4px solid var(--sx-warning);">
-    <div class="card-body">
-      <h4 style="margin: 0 0 var(--sx-space-2); color: var(--sx-warning);">⚠️ Security Considerations</h4>
-      <ul style="margin: 0; padding-left: var(--sx-space-5); line-height: 1.8;">
-        <li>The MCP server exposes <strong>all scan data</strong> to connected AI agents</li>
-        <li>For production: Add authentication (API keys), rate limiting, and audit logging</li>
-        <li>Filter sensitive data (internal IPs, credentials) before exposing via MCP</li>
-        <li>Monitor AI agent activity with audit logs</li>
-        <li>Restrict MCP access to authorized users only</li>
-      </ul>
-    </div>
+  <!-- ================= Security ================= -->
+  <section class="doc" id="security" aria-labelledby="security-title">
+    <h2 id="security-title">Security and privacy</h2>
+    <ul>
+      <li><strong>One organization per token.</strong> A token can read only the scans of the organization you chose, and save reports only for them.</li>
+      <li><strong>Treat the token like a password.</strong> Anyone with it can read that organization's scan results. scanX stores only a hash of it, so a lost token can't be shown again — connect again to get a new one.</li>
+      <li><strong>Disconnect any time</strong> under <a href="#connections">Your connections</a> (in the browser you connected from). The token stops working immediately.</li>
+      <li><strong>Read-only analysis.</strong> Agents cannot start scans, change data or reach your hosts through scanX. The built-in prompt also tells them not to probe the hosts themselves.</li>
+      <li><strong>Your AI provider sees the data your agent reads.</strong> Scan results pass through the AI client and model you use, under that provider's terms.</li>
+      <li>Only connect agents to organizations and domains you are authorized to assess.</li>
+    </ul>
   </section>
+
+  <!-- ================= Troubleshooting ================= -->
+  <section class="doc" id="troubleshooting" aria-labelledby="ts-title">
+    <h2 id="ts-title">Troubleshooting</h2>
+    <h3>“401 / Missing or invalid token”</h3>
+    <p>The token is wrong, was disconnected, or the header is missing. Check the header reads exactly <code>Authorization: Bearer sx_…</code>, or connect again for a new token.</p>
+    <h3>The agent doesn't see any scanX tools</h3>
+    <p>Fully restart the AI client after editing its config. In Claude Code run <code>claude mcp list</code>; in Cursor check Settings → MCP for a red status dot and its log.</p>
+    <h3>“Scan … is running / failed, not completed”</h3>
+    <p>Only completed scans have host data. Wait for the scan to finish on its scan page, or ask the agent to use <code>list_scans</code> with status completed.</p>
+    <h3>Claude Desktop: “spawn npx ENOENT”</h3>
+    <p>Node.js isn't installed or not on the PATH. Install Node.js 18+ and restart, or use the Windows <code>cmd /c</code> form shown above.</p>
+    <h3>Opening the server URL in a browser shows an error</h3>
+    <p>That's expected — <code>/api/mcp</code> is for AI clients, not browsers. Use the setup snippets instead.</p>
+  </section>
+
 </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const form = document.getElementById('connect-form');
+    const btn = document.getElementById('connect-btn');
+    if (form && btn) {
+      form.addEventListener('submit', () => {
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.textContent = 'Connecting…';
+      });
+    }
+  })();
+</script>
 {% endblock %}

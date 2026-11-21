@@ -11,6 +11,7 @@ HTTP request."
 import logging
 import signal
 import sys
+import threading
 import time
 
 from django.core.management.base import BaseCommand
@@ -67,6 +68,9 @@ class Command(BaseCommand):
         if max_scans:
             self.stdout.write(f"Max scans: {max_scans}")
 
+        self._recover_interrupted_scans()
+        self._start_ai_thread(interval)
+
         try:
             while self.running:
                 # Check for pending scans
@@ -98,6 +102,45 @@ class Command(BaseCommand):
         self.running = False
         if self.current_executor:
             self.current_executor.stop()
+
+    def _start_ai_thread(self, interval: int) -> None:
+        """
+        Built-in AI reports run in their own thread so a long scan never
+        blocks them (and vice versa). One report at a time.
+        """
+        from django.db import connection
+        from scanner import ai_agent
+
+        ai_agent.recover_interrupted()
+
+        def loop():
+            while self.running:
+                try:
+                    worked = ai_agent.process_next_report()
+                except Exception:
+                    logger.exception("AI report loop error")
+                    worked = False
+                finally:
+                    connection.close()  # this thread's DB connection
+                if not worked:
+                    time.sleep(interval)
+
+        threading.Thread(target=loop, name="ai-reports", daemon=True).start()
+        self.stdout.write("AI report thread started")
+
+    def _recover_interrupted_scans(self) -> None:
+        """
+        A scan still RUNNING when the worker starts was orphaned by a crash or
+        restart (only one worker runs scans). Fail it so it doesn't spin forever.
+        """
+        from django.utils import timezone
+        count = Scan.objects.filter(status=Scan.Status.RUNNING).update(
+            status=Scan.Status.FAILED,
+            completed_at=timezone.now(),
+            error_message="Scan interrupted: worker was restarted before it finished",
+        )
+        if count:
+            self.stdout.write(self.style.WARNING(f"Marked {count} interrupted scan(s) as failed"))
 
     def _claim_pending_scan(self) -> Scan | None:
         """

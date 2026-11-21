@@ -27,8 +27,19 @@ urlpatterns = [
     path("reports/", views.reports_list, name="reports"),
     path("reports/<uuid:report_id>/", views.report_detail, name="report_detail"),
     path("reports/<uuid:report_id>/download/", views.report_download, name="report_download"),
-    # MCP Guide
+    # MCP: Connect page + user guide, and the endpoint AI agents talk to
     path("mcp/", views.mcp_guide, name="mcp_guide"),
+    path("mcp/connect/", views.mcp_connect, name="mcp_connect"),
+    path("mcp/connections/<int:token_id>/revoke/", views.mcp_revoke, name="mcp_revoke"),
+    # REST API: same tools, plain HTTPS + JSON, same Connect token
+    path("api/v1/tools", views.api_tools, name="api_tools"),
+    path("api/v1/tools/<str:name>", views.api_tool_call, name="api_tool_call"),
+    path("api/v1/openapi.json", views.api_openapi, name="api_openapi"),
+    # Built-in AI
+    path("reports/ai/", views.ai_report_create, name="ai_report_create"),
+    path("reports/<uuid:report_id>/status/", views.report_status, name="report_status"),
+    path("api/mcp", views.mcp_endpoint, name="mcp_endpoint"),
+    path("api/mcp/", views.mcp_endpoint),  # some clients add a trailing slash
     # MCP HTTP Server
     path("mcp/status/", views.mcp_http_status, name="mcp_http_status"),
     path("mcp/start/", views.mcp_http_start, name="mcp_http_start"),
