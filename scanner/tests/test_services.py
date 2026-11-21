@@ -262,7 +262,7 @@ class TechnologySubdomainsTests(TestCase):
 
     def test_returns_expected_keys(self):
         result = get_technology_subdomains("nginx")
-        expected_keys = {"technology", "subdomain_page", "total_subdomains", "sort_by"}
+        expected_keys = {"technology", "subdomain_page", "total_subdomains", "distinct_programs", "sort_by"}
         self.assertEqual(set(result.keys()), expected_keys)
 
     def test_nginx_subdomains(self):

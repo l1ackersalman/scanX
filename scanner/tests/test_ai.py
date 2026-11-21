@@ -10,7 +10,8 @@ from django.urls import reverse
 from scanner import ai_agent, mcp_http
 from scanner.models import Program, Report, Scan
 
-NO_KEYS = {"ANTHROPIC_API_KEY": "", "ANTHROPIC_AUTH_TOKEN": "", "OPENAI_API_KEY": "", "NVIDIA_API_KEY": ""}
+NO_KEYS = {"ANTHROPIC_API_KEY": "", "ANTHROPIC_AUTH_TOKEN": "", "OPENAI_API_KEY": "", "NVIDIA_API_KEY": "",
+           "API_KEY": "", "api_key": "", "AI_API_KEY": "", "ai_api_key": ""}
 CLAUDE_KEY = {**NO_KEYS, "ANTHROPIC_API_KEY": "test-key"}
 OPENAI_KEY = {**NO_KEYS, "OPENAI_API_KEY": "test-key"}
 NVIDIA_KEY = {**NO_KEYS, "NVIDIA_API_KEY": "nvapi-test"}
@@ -93,6 +94,24 @@ class AvailabilityTests(TestCase):
         other = _scan(self.acme)
         self.assertIn("used up", ai_agent.availability(other)["reason"])
 
+    @patch.dict(os.environ, {**NO_KEYS, "api_key": "nvapi-generic"})
+    @override_settings(AI_PROVIDER="")
+    def test_generic_api_key_detected_by_prefix(self):
+        self.assertEqual(ai_agent.active_provider(), "nvidia")
+        self.assertEqual(ai_agent.provider_key("nvidia"), "nvapi-generic")
+        self.assertEqual(ai_agent.provider_key("anthropic"), "")
+
+    @patch.dict(os.environ, {**NO_KEYS, "api_key": "some-unprefixed-key"})
+    @override_settings(AI_PROVIDER="nemotron")
+    def test_generic_key_with_provider_alias(self):
+        self.assertEqual(ai_agent.active_provider(), "nvidia")
+        self.assertEqual(ai_agent.provider_key("nvidia"), "some-unprefixed-key")
+
+    @patch.dict(os.environ, {**NO_KEYS, "api_key": "some-unprefixed-key"})
+    @override_settings(AI_PROVIDER="")
+    def test_unknown_generic_key_needs_provider(self):
+        self.assertIsNone(ai_agent.active_provider())
+
     @patch.dict(os.environ, CLAUDE_KEY)
     def test_incomplete_scan_rejected(self):
         running = Scan.objects.create(domain="x.test", program=self.acme, status=Scan.Status.RUNNING)
@@ -117,6 +136,7 @@ class BuiltinAgentTests(TestCase):
         self.assertEqual(report.status, Report.Status.QUEUED)
         page = self.client.get(reverse("scanner:report_detail", args=[report.id]))
         self.assertContains(page, "Waiting for the AI")
+        self.assertContains(page, 'id="ai-timer"')  # live wait timer
         self.assertEqual(self.client.get(reverse("scanner:report_status", args=[report.id])).json()["status"], "queued")
         # A second click within the cooldown goes to the same report, no new job
         self.client.post(reverse("scanner:ai_report_create"), {"scan": str(self.scan.id)})
@@ -159,9 +179,11 @@ class BuiltinAgentTests(TestCase):
         self.assertIn("admin.acme.test", tool_result["content"])
         self.assertEqual(second_call["fallbacks"], "default")
         self.assertEqual(second_call["model"], "claude-opus-5-5")
-        # The finished report renders with its findings visible
+        # The finished report renders with its findings visible and how long it took
         page = self.client.get(reverse("scanner:report_detail", args=[report.id]))
         self.assertContains(page, "Exposed admin")
+        self.assertRegex(page.content.decode(), r"\bin \d+s\b")
+        self.assertNotContains(page, 'id="ai-timer"')
 
     @patch.dict(os.environ, CLAUDE_KEY)
     @override_settings(AI_PROVIDER="anthropic")
@@ -222,6 +244,36 @@ class BuiltinAgentTests(TestCase):
         req = OpenAI.return_value.chat.completions.create.call_args.kwargs
         self.assertEqual(req["model"], "nvidia/nemotron-test")
         self.assertIn("max_tokens", req)
+
+    @patch.dict(os.environ, CLAUDE_KEY)
+    @override_settings(AI_PROVIDER="anthropic")
+    def test_failed_report_can_be_retried_immediately(self):
+        failed = ai_agent.queue_report(self.scan)
+        failed.mark_failed("boom")
+        self.assertTrue(ai_agent.availability(self.scan)["ok"])
+
+    def test_builtin_prompt_mentions_only_submit_report(self):
+        text = ai_agent._Job(ai_agent.queue_report(self.scan)).user_prompt()
+        self.assertIn("submit_report", text)
+        self.assertNotIn("save_report", text)
+        self.assertNotIn("report_type", text)
+
+    @patch.dict(os.environ, CLAUDE_KEY)
+    @override_settings(AI_PROVIDER="anthropic")
+    @patch("anthropic.Anthropic")
+    def test_truncated_tool_call_is_not_executed(self, Anthropic):
+        Anthropic.return_value.beta.messages.create.side_effect = [
+            _block(stop_reason="max_tokens", content=[
+                _block(type="tool_use", id="t1", name="submit_report", input={"title": "cut", "content": "partial"}),
+            ]),
+            _block(stop_reason="tool_use", content=[
+                _block(type="tool_use", id="t2", name="submit_report", input={"title": "Full", "summary": "s", "content": "Complete report"}),
+            ]),
+        ]
+        report = ai_agent.queue_report(self.scan)
+        ai_agent.process_next_report()
+        report.refresh_from_db()
+        self.assertEqual(report.title, "Full")  # the cut-off call was refused, the retry was saved
 
     def test_recover_interrupted(self):
         r = Report.objects.create(scan=self.scan, title="x", status=Report.Status.GENERATING, source=Report.Source.BUILTIN_AI)

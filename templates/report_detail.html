@@ -1,5 +1,68 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static report_markdown %}
+
+{% block extra_css %}
+<style>
+  /* Rendered Markdown of AI reports */
+  .report-md { max-width: 80ch; line-height: 1.7; color: var(--sx-text-primary); overflow-wrap: anywhere; }
+  .report-md h1 { font-size: 1.5rem; margin: var(--sx-space-6) 0 var(--sx-space-3); }
+  .report-md h2 { font-size: 1.25rem; margin: var(--sx-space-6) 0 var(--sx-space-3); padding-top: var(--sx-space-3); border-top: 1px solid var(--sx-border); }
+  .report-md h3 { font-size: 1.05rem; margin: var(--sx-space-5) 0 var(--sx-space-2); }
+  .report-md h1:first-child, .report-md h2:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+  .report-md p, .report-md ul, .report-md ol { margin: 0 0 var(--sx-space-3); }
+  .report-md li { margin-bottom: var(--sx-space-1); }
+  .report-md code { font-family: var(--sx-font-mono); font-size: 0.85em; padding: 0.0625rem 0.3rem; border: 1px solid var(--sx-border); border-radius: 4px; background: var(--sx-background); }
+  .report-md pre { padding: var(--sx-space-3); background: var(--sx-background); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); overflow-x: auto; }
+  .report-md pre code { border: 0; padding: 0; }
+  .report-md blockquote { margin: 0 0 var(--sx-space-3); padding-left: var(--sx-space-3); border-left: 3px solid var(--sx-border); color: var(--sx-text-secondary); }
+  .report-md hr { border: 0; border-top: 1px solid var(--sx-border); margin: var(--sx-space-5) 0; }
+  .report-md table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 0 0 var(--sx-space-4); font-size: var(--sx-text-sm); }
+  .report-md th, .report-md td { padding: var(--sx-space-2) var(--sx-space-3); border: 1px solid var(--sx-border); text-align: left; vertical-align: top; }
+  .report-md th { background: var(--sx-surface-hover); font-weight: 600; }
+
+  /* Findings by severity */
+  .risk-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sx-space-2); margin-bottom: var(--sx-space-4); }
+  .risk-strip .label { font-size: var(--sx-text-sm); color: var(--sx-text-secondary); margin-right: var(--sx-space-1); }
+
+  /* Ask the report */
+  .ask { margin-top: var(--sx-space-6); max-width: 80ch; }
+  .ask h2 { font-size: var(--sx-text-xl); margin: 0 0 var(--sx-space-1); }
+  .ask-hint { margin: 0 0 var(--sx-space-4); font-size: var(--sx-text-sm); color: var(--sx-text-secondary); }
+  .qa-list { list-style: none; margin: 0 0 var(--sx-space-4); padding: 0; display: grid; gap: var(--sx-space-4); }
+  .qa { border: 1px solid var(--sx-border); border-radius: var(--sx-radius-card); background: var(--sx-surface); padding: var(--sx-space-4); }
+  .qa .who { display: inline-block; min-width: 2.75em; margin-right: var(--sx-space-2); font-size: var(--sx-text-xs); font-weight: 600; text-transform: uppercase; color: var(--sx-text-secondary); }
+  .qa-q { margin: 0 0 var(--sx-space-3); font-weight: 500; }
+  .qa-a { margin: 0; padding-top: var(--sx-space-3); border-top: 1px solid var(--sx-border); }
+  .qa-a.report-md .who { float: left; }
+  .qa-pending { color: var(--sx-text-secondary); }
+  .qa-failed { color: var(--sx-danger); }
+  .ask-form { display: grid; gap: var(--sx-space-2); }
+  .ask-form textarea { min-height: 64px; resize: vertical; font-size: var(--sx-text-base); }
+  .ask-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--sx-space-3); }
+  .ask-suggestions { display: flex; flex-wrap: wrap; gap: var(--sx-space-2); }
+  .chip { cursor: pointer; padding: 0.25rem 0.625rem; border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); background: transparent; color: var(--sx-text-secondary); font-size: var(--sx-text-xs); transition: border-color var(--sx-transition), color var(--sx-transition); }
+  .chip:hover { border-color: var(--sx-accent); color: var(--sx-text-primary); }
+
+  /* Live AI steps */
+  .ai-steps { grid-column: 2; list-style: none; margin: var(--sx-space-3) 0 0; padding: 0; font-size: var(--sx-text-sm); color: var(--sx-text-secondary); }
+  .ai-steps li { display: flex; gap: var(--sx-space-3); padding: 0.125rem 0; }
+  .ai-steps li:last-child { color: var(--sx-text-primary); font-weight: 500; }
+  .ai-steps .t { flex: 0 0 3.5em; text-align: right; font-family: var(--sx-font-mono); font-size: var(--sx-text-xs); color: var(--sx-text-secondary); font-weight: 400; padding-top: 0.15em; }
+
+  /* Live wait timer */
+  .ai-timer {
+    margin-left: var(--sx-space-2);
+    padding: 0.0625rem 0.5rem;
+    border: 1px solid var(--sx-border);
+    border-radius: var(--sx-radius-control);
+    font-family: var(--sx-font-mono);
+    font-size: var(--sx-text-sm);
+    font-weight: 500;
+    color: var(--sx-text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+{% endblock %}
 
 {% block title %}Report: {{ report.title }} — scanX{% endblock %}
 
@@ -15,6 +78,7 @@
       <div style="display: flex; gap: var(--sx-space-3); flex-wrap: wrap; margin-top: var(--sx-space-2);">
         <span class="badge badge-info">{{ report.get_report_type_display }}</span>
         <span class="status-badge status-{{ report.status }}">{{ report.get_status_display }}</span>
+        {% if report.risk_level %}{% include "partials/risk_badge.html" with level=report.risk_level %}{% endif %}
         <span class="badge badge-info">{{ report.scan.program.get_organization_type_display }}</span>
       </div>
       <p style="margin: var(--sx-space-2) 0 0; color: var(--sx-text-secondary); font-size: var(--sx-text-sm);">
@@ -22,7 +86,7 @@
         {% if report.scan.program %}
         • Organization: <a href="{% url 'scanner:organization_detail' report.scan.program.id %}" class="link-primary">{{ report.scan.program.name }}</a>
         {% endif %}
-        • Generated by {{ report.generated_by }} on {{ report.created_at|date:"M d, Y H:i" }}
+        • Generated by {{ report.generated_by }} on {{ report.created_at|date:"M d, Y H:i" }}{% if generation_time %} in {{ generation_time }}{% endif %}
       </p>
     </div>
     <div>
@@ -43,8 +107,14 @@
   <div class="notice notice-neutral" role="status" aria-live="polite" id="ai-progress" style="margin-top: var(--sx-space-5);"
        data-status-url="{% url 'scanner:report_status' report.id %}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    <p class="notice-title">{% if report.status == "queued" %}Waiting for the AI…{% else %}The AI is analysing the scan…{% endif %}</p>
-    <p class="notice-body">{{ report.generated_by }} is reading the scan data with scanX's tools and writing the report. This usually takes 30–90 seconds; the page updates by itself.</p>
+    <p class="notice-title">
+      {% if report.status == "queued" %}Waiting for the AI…{% else %}The AI is analysing the scan…{% endif %}
+      <span class="ai-timer" id="ai-timer" role="timer" aria-live="off" data-elapsed="{{ elapsed_seconds }}">{{ elapsed_seconds }}s</span>
+    </p>
+    <p class="notice-body">{{ report.generated_by }} is reading the scan data with scanX's tools and writing the report. Small targets take about 1–2 minutes; large ones (hundreds of live hosts) can take 3–5. The page updates by itself.</p>
+    <ol class="ai-steps" id="ai-steps" aria-label="What the AI is doing">
+      {% for step in report.progress %}<li><span class="t">{{ step.at }}s</span>{{ step.text }}</li>{% empty %}<li class="current"><span class="t">0s</span>Waiting for the AI worker…</li>{% endfor %}
+    </ol>
   </div>
   {% elif report.status == "failed" %}
   <div class="notice notice-error" role="alert" style="margin-top: var(--sx-space-5);">
@@ -68,6 +138,15 @@
   <!-- Report Content -->
   <section class="card" style="margin-top: var(--sx-space-5);">
     <div class="card-body">
+      {% with risk=report.risk %}{% if risk.total %}
+      <div class="risk-strip" aria-label="Findings by severity">
+        <span class="label">Findings</span>
+        {% if risk.counts.critical %}<span class="risk-badge risk-critical">{{ risk.counts.critical }} Critical</span>{% endif %}
+        {% if risk.counts.high %}<span class="risk-badge risk-high">{{ risk.counts.high }} High</span>{% endif %}
+        {% if risk.counts.medium %}<span class="risk-badge risk-medium">{{ risk.counts.medium }} Medium</span>{% endif %}
+        {% if risk.counts.low %}<span class="risk-badge risk-low">{{ risk.counts.low }} Low</span>{% endif %}
+      </div>
+      {% endif %}{% endwith %}
       {% if report.summary %}
       <div style="margin-bottom: var(--sx-space-6); padding: var(--sx-space-4); background: var(--sx-surface-hover); border-radius: var(--sx-radius-control); border-left: 4px solid var(--sx-accent);">
         <h3 style="margin: 0 0 var(--sx-space-2); font-size: var(--sx-text-lg); font-weight: 600;">Summary</h3>
@@ -78,7 +157,7 @@
       {% if report.content %}
       <div style="margin-bottom: var(--sx-space-6);">
         <h3 style="margin: 0 0 var(--sx-space-3); font-size: var(--sx-text-lg); font-weight: 600;">Analysis</h3>
-        <div style="line-height: 1.8; white-space: pre-wrap; font-family: var(--sx-font-sans);">{{ report.content }}</div>
+        <div class="report-md">{{ report.content|render_markdown }}</div>
       </div>
       {% endif %}
 
@@ -86,7 +165,7 @@
       <div style="margin-bottom: var(--sx-space-6);">
         <h3 style="margin: 0 0 var(--sx-space-3); font-size: var(--sx-text-lg); font-weight: 600;">Structured Findings</h3>
         <div style="background: var(--sx-background); border: 1px solid var(--sx-border); border-radius: var(--sx-radius-control); padding: var(--sx-space-4); overflow-x: auto;">
-          <pre style="margin: 0; font-family: var(--sx-font-mono); font-size: var(--sx-text-xs); line-height: 1.6;">{{ findings_json }}</pre>
+          <pre style="margin: 0; font-family: var(--sx-font-mono); font-size: var(--sx-text-xs); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere;">{{ findings_json }}</pre>
         </div>
       </div>
       {% endif %}
@@ -112,6 +191,49 @@
       </div>
     </div>
   </section>
+
+  <!-- Ask the report (built-in AI follow-up questions) -->
+  <section class="ask" id="ask" aria-labelledby="ask-title">
+    <h2 id="ask-title">Ask about this report</h2>
+    <p class="ask-hint">Ask the AI a follow-up question. It checks the scan data with scanX's tools before answering.</p>
+
+    {% if questions %}
+    <ol class="qa-list">
+      {% for q in questions %}
+      <li class="qa" id="q-{{ q.id }}">
+        <p class="qa-q"><span class="who">You</span>{{ q.question }}</p>
+        {% if q.status == "answered" %}
+          <div class="qa-a report-md"><span class="who">AI</span>{{ q.answer|render_markdown }}</div>
+        {% elif q.status == "failed" %}
+          <p class="qa-a qa-failed"><span class="who">AI</span>{{ q.answer|default:"Couldn't answer this one. Try asking again." }}</p>
+        {% else %}
+          <p class="qa-a qa-pending" data-pending="1"><span class="who">AI</span>Thinking… <span class="ai-timer" data-elapsed="0">0s</span></p>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+
+    {% if ask.ok %}
+    <form method="post" action="{% url 'scanner:report_ask' report.id %}" class="ask-form" id="ask-form">
+      {% csrf_token %}
+      <label for="ask-q" class="sr-only">Your question</label>
+      <textarea id="ask-q" name="question" class="form-input" rows="2" maxlength="{{ max_question_chars }}" required
+                placeholder="e.g. Which host should we fix first, and how?"></textarea>
+      <div class="ask-actions">
+        <span class="text-xs muted">Answered by {{ ask.provider }}</span>
+        <button type="submit" class="btn-primary" id="ask-btn">Ask</button>
+      </div>
+      <div class="ask-suggestions" aria-label="Example questions">
+        <button type="button" class="chip" data-q="Which host should we fix first, and why?">Which host to fix first?</button>
+        <button type="button" class="chip" data-q="Explain the top risk to a non-technical manager in 3 sentences.">Explain for a manager</button>
+        <button type="button" class="chip" data-q="Which findings need manual verification, and how would we verify them?">What needs verification?</button>
+      </div>
+    </form>
+    {% else %}
+      <p class="text-xs muted">{{ ask.reason }}</p>
+    {% endif %}
+  </section>
   {% endif %}
 </div>
 {% endblock %}
@@ -119,18 +241,60 @@
 {% block extra_js %}
 <script>
   (function () {
-    const box = document.getElementById('ai-progress');
-    if (!box) return;
-    const url = box.dataset.statusUrl;
+    const url = '{% url "scanner:report_status" report.id %}';
+    const fmt = (s) => s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
+
+    // Live "how long have we waited" timers (report generation and pending answers)
+    document.querySelectorAll('.ai-timer').forEach((timer) => {
+      const startedAt = Date.now() - Number(timer.dataset.elapsed || 0) * 1000;
+      const update = () => { timer.textContent = fmt(Math.floor((Date.now() - startedAt) / 1000)); };
+      update();
+      setInterval(update, 1000);
+    });
+
+    // Ask form: example chips fill the box; prevent double submits
+    const askForm = document.getElementById('ask-form');
+    if (askForm) {
+      const box = document.getElementById('ask-q');
+      askForm.querySelectorAll('.chip').forEach((chip) => chip.addEventListener('click', () => {
+        box.value = chip.dataset.q;
+        box.focus();
+      }));
+      askForm.addEventListener('submit', () => {
+        const btn = document.getElementById('ask-btn');
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.textContent = 'Asking…';
+      });
+    }
+
+    const generating = !!document.getElementById('ai-progress');
+    const answering = !!document.querySelector('[data-pending]');
+    if (!generating && !answering) return;
+
     const tick = async () => {
       try {
         const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
         const data = await res.json();
+        if (answering && data.pending_questions === 0) { window.location.reload(); return; }
+        if (!generating) { setTimeout(tick, 2000); return; }
         if (data.status !== 'queued' && data.status !== 'generating') { window.location.reload(); return; }
+        // Show the AI's live steps (text only - never HTML)
+        const list = document.getElementById('ai-steps');
+        if (list && Array.isArray(data.progress) && data.progress.length) {
+          list.replaceChildren(...data.progress.map((s) => {
+            const li = document.createElement('li');
+            const t = document.createElement('span');
+            t.className = 't';
+            t.textContent = `${Number(s.at) || 0}s`;
+            li.append(t, document.createTextNode(String(s.text || '')));
+            return li;
+          }));
+        }
       } catch (e) { /* keep polling */ }
-      setTimeout(tick, 3000);
+      setTimeout(tick, 2000);
     };
-    setTimeout(tick, 3000);
+    setTimeout(tick, 2000);
   })();
 </script>
 {% endblock %}

@@ -116,15 +116,6 @@ class LogAndEndpointTests(TestCase):
         res = self.client.get(reverse("scanner:scan_logs", args=[self.scan.id]))
         self.assertTrue(res.json()["is_terminal"])
 
-    def test_mcp_status_no_login_redirect(self):
-        res = self.client.get(reverse("scanner:mcp_http_status"))
-        self.assertEqual(res.status_code, 200)
-        self.assertIn("running", res.json())
-
-    def test_mcp_start_rejects_remote(self):
-        res = self.client.post(reverse("scanner:mcp_http_start"), REMOTE_ADDR="10.0.0.5")
-        self.assertEqual(res.status_code, 403)
-
     def test_report_download_link_works_with_get(self):
         report = Report.objects.create(scan=self.scan, title="R")
         res = self.client.get(reverse("scanner:report_download", args=[report.id]))

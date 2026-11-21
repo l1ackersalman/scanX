@@ -79,6 +79,11 @@ def normalize_domain(value: str) -> str:
     value = (value or "").strip()
     if not value:
         return value
+    # urlsplit silently deletes \n, \r and \t, which would turn "a.com\nb" into
+    # "a.comb" (a different target). Leave such input untouched so the
+    # validator rejects it.
+    if any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in value):
+        return value
     try:
         host = urlsplit(value if "://" in value else f"//{value}").hostname
     except ValueError:

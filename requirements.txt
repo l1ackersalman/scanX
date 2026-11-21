@@ -6,3 +6,6 @@ whitenoise>=6.6.0
 # Built-in AI reports (only the provider whose key is set is used)
 anthropic>=2.12.0
 openai>=3.0.0
+# Render AI report Markdown safely (sanitized HTML)
+markdown>=3.5
+nh3>=0.2.14

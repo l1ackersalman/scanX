@@ -102,7 +102,7 @@
     overflow-wrap: anywhere;
   }
   .recent-meta { font-size: var(--sx-text-xs); color: var(--sx-text-secondary); }
-  .recent-status { grid-row: span 2; align-self: center; text-align: right; }
+  .recent-status { grid-row: span 2; align-self: center; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--sx-space-1); }
   .recent-error {
     grid-column: 1 / -1;
     font-size: var(--sx-text-xs);
@@ -149,7 +149,7 @@
   }
   .mcp-row h2 { font-family: var(--sx-font-sans); font-size: var(--sx-text-sm); font-weight: 600; margin: 0; }
   .mcp-row .spacer { flex: 1; }
-  .mcp-url { font-family: var(--sx-font-mono); font-size: var(--sx-text-xs); color: var(--sx-text-secondary); overflow-wrap: anywhere; }
+  .muted { color: var(--sx-text-secondary); }
   .status-unknown { color: var(--sx-text-secondary); border: 1px solid var(--sx-border); }
 </style>
 {% endblock %}
@@ -233,7 +233,10 @@
           {% for scan in recent_scans %}
           <li class="recent-item">
             <a href="{% url 'scanner:scan_detail' scan.id %}" class="recent-domain">{{ scan.domain }}</a>
-            <span class="recent-status"><span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span></span>
+            <span class="recent-status">
+              {% if scan.risk_level %}{% include "partials/risk_badge.html" with level=scan.risk_level report_id=scan.risk_report_id %}{% endif %}
+              <span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span>
+            </span>
             <span class="recent-meta">
               {% if scan.program %}{{ scan.program.name }} · {% endif %}{{ scan.created_at|timesince }} ago
               {% if scan.status == "completed" %} · {{ scan.live_subdomains|default:0 }} live of {{ scan.total_subdomains|default:0 }}{% endif %}
@@ -260,16 +263,12 @@
     </section>
   </div>
 
-  <!-- MCP server -->
-  <section class="mcp-row" aria-labelledby="mcp-status-title">
-    <h2 id="mcp-status-title">MCP server</h2>
-    <span id="mcp-status-indicator" class="status-badge status-unknown" aria-live="polite">Checking…</span>
-    <span id="mcp-url-display" class="mcp-url" hidden></span>
+  <!-- AI analysis entry point (replaces the old local MCP server row) -->
+  <section class="mcp-row" aria-labelledby="ai-row-title">
+    <h2 id="ai-row-title">AI analysis</h2>
+    <span class="text-xs muted">Get an attack-vector report from scanX AI, or connect your own agent over MCP / REST API.</span>
     <span class="spacer"></span>
-    <span id="mcp-feedback" class="text-xs" aria-live="polite"></span>
-    <button id="mcp-copy-btn" type="button" class="btn-ghost btn-sm" hidden>Copy URL</button>
-    <button id="mcp-start-btn" type="button" class="btn-ghost btn-sm" hidden>Start server</button>
-    <a href="{% url 'scanner:mcp_guide' %}" class="text-xs">How MCP works</a>
+    <a href="{% url 'scanner:mcp_guide' %}" class="btn-ghost btn-sm">Open AI analysis</a>
   </section>
 
 </div>
@@ -297,84 +296,6 @@
         }
       });
     }
-
-    // ---- MCP server status ----
-    const indicator = document.getElementById('mcp-status-indicator');
-    const urlEl = document.getElementById('mcp-url-display');
-    const startBtn = document.getElementById('mcp-start-btn');
-    const copyBtn = document.getElementById('mcp-copy-btn');
-    const feedback = document.getElementById('mcp-feedback');
-    const statusUrl = '{% url "scanner:mcp_http_status" %}';
-    const startUrl = '{% url "scanner:mcp_http_start" %}';
-
-    function render(data) {
-      if (data.running) {
-        indicator.textContent = 'Running';
-        indicator.className = 'status-badge status-running';
-        urlEl.textContent = data.url;
-        urlEl.hidden = false;
-        copyBtn.hidden = false;
-        startBtn.hidden = true;
-      } else {
-        indicator.textContent = 'Stopped';
-        indicator.className = 'status-badge status-cancelled';
-        urlEl.hidden = true;
-        copyBtn.hidden = true;
-        startBtn.hidden = false;
-      }
-    }
-
-    async function check() {
-      try {
-        const res = await fetch(statusUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        render(await res.json());
-      } catch (e) {
-        indicator.textContent = 'Unavailable';
-        indicator.className = 'status-badge status-unknown';
-      }
-    }
-
-    startBtn.addEventListener('click', async () => {
-      startBtn.disabled = true;
-      startBtn.setAttribute('aria-busy', 'true');
-      feedback.textContent = 'Starting…';
-      try {
-        const res = await fetch(startUrl, {
-          method: 'POST',
-          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '' },
-        });
-        const data = await res.json().catch(() => ({ status: 'error', message: `HTTP ${res.status}` }));
-        if (data.status === 'error') {
-          feedback.textContent = data.message;
-          return;
-        }
-        for (let i = 0; i < 10; i++) {
-          await new Promise(r => setTimeout(r, 1000));
-          const s = await fetch(statusUrl).then(r => r.json()).catch(() => ({}));
-          if (s.running) { render(s); feedback.textContent = ''; return; }
-        }
-        feedback.textContent = 'Server did not come up — check the terminal running scanX.';
-      } catch (e) {
-        feedback.textContent = 'Could not reach scanX.';
-      } finally {
-        startBtn.disabled = false;
-        startBtn.removeAttribute('aria-busy');
-      }
-    });
-
-    copyBtn.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(urlEl.textContent);
-        feedback.textContent = 'URL copied';
-      } catch (e) {
-        feedback.textContent = 'Copy failed — select the URL manually';
-      }
-      setTimeout(() => { feedback.textContent = ''; }, 2500);
-    });
-
-    check();
-    setInterval(check, 30000);
   })();
 </script>
 {% endblock %}

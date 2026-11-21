@@ -3,11 +3,10 @@ scanX Scanner Views
 
 Dashboard, scan initiation, live logs, and scan history.
 """
+import io
 import json
 import logging
-import socket
-import subprocess
-import sys
+import zipfile
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -16,6 +15,8 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.http import (
+    FileResponse,
+    Http404,
     HttpResponse,
     HttpResponseBadRequest,
     JsonResponse,
@@ -26,13 +27,16 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 import uuid
 
 from . import ai_agent, mcp_http
 from .models import McpToken, Scan, Program, Report
 from .services import (
+    _extract_tech_from_entry,
     get_log_lines,
+    get_scan_files,
     get_assets_overview,
     get_technology_breakdown,
     get_technology_subdomains,
@@ -65,35 +69,14 @@ def get_status_class(status):
     return "http-status-unknown"
 
 
-def _normalize_tech(tech):
-    """Normalize tech field to a list of individual technology strings."""
-    if tech is None:
-        return []
-    if isinstance(tech, list):
-        return [t.strip() for t in tech if t and str(t).strip()]
-    if isinstance(tech, str):
-        tech = tech.strip()
-        if not tech:
-            return []
-        return [t.strip() for t in tech.split(",") if t.strip()]
-    return []
-
-
 def dashboard(request):
     """
-    Main dashboard: scan form + scan history.
+    Main dashboard: scan form + recent scans.
     """
     if request.method == "POST":
         return start_scan(request)
 
-    # GET: show dashboard with scan history
-    scans_list = Scan.objects.all()
-    paginator = Paginator(scans_list, 10)
-    page_number = request.GET.get("page")
-    scans = paginator.get_page(page_number)
-
     context = {
-        "scans": scans,
         "page_title": "Dashboard",
         **_dashboard_form_context(),
     }
@@ -103,9 +86,19 @@ def dashboard(request):
 def _dashboard_form_context() -> dict:
     """Shared context for the overview page (initial load and form errors)."""
     programs = list(Program.objects.all().order_by("-created_at"))
+    recent = list(Scan.objects.select_related("program").defer("httpx_results")[:6])
+    # Latest AI risk per scan, one query
+    risk = {}
+    for scan_id, level, rid in (Report.objects.filter(scan__in=recent, status=Report.Status.COMPLETED)
+                                .exclude(risk_level="").exclude(report_type=Report.ReportType.CHANGE_ANALYSIS)
+                                .order_by("created_at")
+                                .values_list("scan_id", "risk_level", "id")):
+        risk[scan_id] = (level, rid)  # later reports overwrite earlier ones
+    for s in recent:
+        s.risk_level, s.risk_report_id = risk.get(s.id, ("", None))
     return {
         "programs": programs,
-        "recent_scans": Scan.objects.select_related("program")[:6],
+        "recent_scans": recent,
         # Pre-select the only organization so the user doesn't have to
         "program_id": str(programs[0].id) if len(programs) == 1 else "",
     }
@@ -134,13 +127,22 @@ def start_scan(request):
 
     if not program_id:
         program_error = "Please add organization before scan."
-    else:
-        try:
-            Program.objects.get(id=program_id)
-        except Program.DoesNotExist:
-            program_error = "Selected program does not exist."
+    elif not program_id.isdigit() or not Program.objects.filter(id=int(program_id)).exists():
+        # Non-numeric ids used to crash with a 500
+        program_error = "Selected organization does not exist."
 
-    if domain_error or program_error:
+    # The app is public: cap the queue so one visitor can't block everyone
+    queue_error = ""
+    if not (domain_error or program_error):
+        waiting = Scan.objects.filter(status=Scan.Status.PENDING).count()
+        if waiting >= settings.SCAN_QUEUE_LIMIT:
+            queue_error = (
+                f"The scan queue is full ({waiting} scans waiting). "
+                "Try again in a few minutes, when the current scans finish."
+            )
+            messages.error(request, queue_error)
+
+    if domain_error or program_error or queue_error:
         context = {
             **_dashboard_form_context(),
             "domain": domain or request.POST.get("domain", "").strip(),
@@ -149,7 +151,7 @@ def start_scan(request):
             "domain_error": domain_error,
             "page_title": "Dashboard",
         }
-        return render(request, "dashboard.html", context, status=400)
+        return render(request, "dashboard.html", context, status=429 if queue_error else 400)
 
     # Create scan record (authorization fields removed from UI)
     scan = Scan.objects.create(
@@ -180,7 +182,7 @@ def scan_detail(request, scan_id):
     httpx_results_all = [
         {**r,
          "status_class": get_status_class(r.get("status", "")),
-         "tech": _normalize_tech(r.get("tech"))
+         "tech": _extract_tech_from_entry(r)
         }
         for r in httpx_results_raw
     ]
@@ -254,7 +256,13 @@ def scan_detail(request, scan_id):
         "is_filtered": bool(active_filters),
         "filter_query": urlencode(active_filters),
         "final_log": final_log,
+        "downloads": get_scan_files(scan) if scan.is_terminal else [],
         "ai": ai_agent.availability(scan) if scan.status == Scan.Status.COMPLETED else None,
+        "ai_change": (ai_agent.availability(scan, Report.ReportType.CHANGE_ANALYSIS)
+                      if scan.status == Scan.Status.COMPLETED and ai_agent.previous_scan(scan) else None),
+        # Overall risk comes from attack-vector reports; change analyses only rate what changed
+        "latest_ai_report": scan.reports.filter(status=Report.Status.COMPLETED)
+        .exclude(report_type=Report.ReportType.CHANGE_ANALYSIS).order_by("-created_at").first(),
         "all_statuses": all_statuses,
         "all_technologies": all_technologies,
         "all_ips": all_ips,
@@ -281,6 +289,33 @@ def stop_scan(request, scan_id):
     else:
         messages.error(request, f"Cannot cancel scan with status: {scan.get_status_display()}")
     return redirect("scanner:history")
+
+
+@require_http_methods(["GET"])
+def scan_download(request, scan_id, name):
+    """Download one of a scan's result files (fixed list, see SCAN_DOWNLOADS)."""
+    scan = get_object_or_404(Scan, id=scan_id)
+    file = next((f for f in get_scan_files(scan) if f["name"] == name), None)
+    if not file:
+        raise Http404("No such file for this scan.")
+    return FileResponse(open(file["path"], "rb"), as_attachment=True,
+                        filename=f"{scan.domain}-{name}", content_type="text/plain; charset=utf-8")
+
+
+@require_http_methods(["GET"])
+def scan_download_all(request, scan_id):
+    """All of a scan's result files in one zip."""
+    scan = get_object_or_404(Scan, id=scan_id)
+    files = get_scan_files(scan)
+    if not files:
+        raise Http404("This scan has no result files.")
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for f in files:
+            zf.write(f["path"], arcname=f"{scan.domain}/{f['name']}")
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"scanx-{scan.domain}-{str(scan.id)[:8]}.zip",
+                        content_type="application/zip")
 
 
 def scan_logs(request, scan_id):
@@ -347,6 +382,8 @@ def create_program(request):
         errors = []
         if not name:
             errors.append("Organization name is required.")
+        elif len(name) > Program._meta.get_field("name").max_length:
+            errors.append("Organization name is too long (max 255 characters).")
         if not organization_type:
             errors.append("Organization type is required.")
 
@@ -396,6 +433,8 @@ def edit_program(request, organization_id):
         errors = []
         if not name:
             errors.append("Organization name is required.")
+        elif len(name) > Program._meta.get_field("name").max_length:
+            errors.append("Organization name is too long (max 255 characters).")
         if not organization_type:
             errors.append("Organization type is required.")
 
@@ -521,17 +560,11 @@ def technology_detail(request):
         per_page=50,
     )
 
-    # Count distinct programs across matching subdomains
-    distinct_programs = set()
-    for item in tech_data["subdomain_page"].object_list:
-        if item["program"]:
-            distinct_programs.add(item["program"].id)
-
     context = {
         "technology": technology,
         "subdomain_page": tech_data["subdomain_page"],
         "total_subdomains": tech_data["total_subdomains"],
-        "distinct_programs": len(distinct_programs),
+        "distinct_programs": tech_data["distinct_programs"],
         "page_title": f"Technology: {technology}",
     }
     return render(request, "technology_detail.html", context)
@@ -596,7 +629,8 @@ def mcp_guide(request):
 @require_http_methods(["POST"])
 def mcp_connect(request):
     """Create an organization-scoped MCP token (the Connect button)."""
-    program = Program.objects.filter(id=request.POST.get("program") or 0).first()
+    raw_id = (request.POST.get("program") or "").strip()
+    program = Program.objects.filter(id=int(raw_id)).first() if raw_id.isdigit() else None
     if not program:
         messages.error(request, "Choose the organization your AI agent should analyse.")
         return redirect(reverse("scanner:mcp_guide") + "#connect")
@@ -715,14 +749,19 @@ def api_openapi(request):
 def ai_report_create(request):
     scan_id = request.POST.get("scan")
     scan = Scan.objects.select_related("program").filter(id=scan_id).first() if _is_uuid(scan_id) else None
-    back = request.POST.get("next") or reverse("scanner:reports")
-    if not back.startswith("/"):
+    back = request.POST.get("next") or ""
+    # "//evil.com" starts with "/" but is another site: use Django's check
+    if not url_has_allowed_host_and_scheme(back, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         back = reverse("scanner:reports")
     if not scan:
         messages.error(request, "Choose a completed scan to analyse.")
         return redirect(back)
 
-    info = ai_agent.availability(scan)
+    report_type = request.POST.get("type") or Report.ReportType.ATTACK_VECTOR
+    if report_type not in (Report.ReportType.ATTACK_VECTOR, Report.ReportType.CHANGE_ANALYSIS):
+        report_type = Report.ReportType.ATTACK_VECTOR
+
+    info = ai_agent.availability(scan, report_type)
     if not info["ok"]:
         recent = info.get("recent_report")
         if recent:
@@ -731,8 +770,28 @@ def ai_report_create(request):
         messages.error(request, info["reason"])
         return redirect(back)
 
-    report = ai_agent.queue_report(scan)
+    report = ai_agent.queue_report(scan, report_type)
     return redirect("scanner:report_detail", report_id=report.id)
+
+
+@require_http_methods(["POST"])
+def report_ask(request, report_id):
+    """Ask the built-in AI a follow-up question about a completed report."""
+    report = get_object_or_404(Report, id=report_id)
+    text = (request.POST.get("question") or "").strip()
+    target = reverse("scanner:report_detail", args=[report.id]) + "#ask"
+    if not text:
+        messages.error(request, "Type a question first.")
+        return redirect(target)
+    if len(text) > ai_agent.MAX_QUESTION_CHARS:
+        messages.error(request, f"Keep the question under {ai_agent.MAX_QUESTION_CHARS} characters.")
+        return redirect(target)
+    info = ai_agent.question_availability(report)
+    if not info["ok"]:
+        messages.error(request, info["reason"])
+        return redirect(target)
+    ai_agent.queue_question(report, text)
+    return redirect(target)
 
 
 def _is_uuid(value) -> bool:
@@ -743,11 +802,21 @@ def _is_uuid(value) -> bool:
         return False
 
 
+def _duration_text(delta) -> str:
+    """timedelta → '45s' / '2m 30s'."""
+    s = max(int(delta.total_seconds()), 0)
+    return f"{s}s" if s < 60 else f"{s // 60}m {s % 60:02d}s"
+
+
 @require_http_methods(["GET"])
 def report_status(request, report_id):
     """Small JSON poll endpoint used by the report page while the AI writes."""
     report = get_object_or_404(Report, id=report_id)
-    return JsonResponse({"status": report.status})
+    return JsonResponse({
+        "status": report.status,
+        "progress": report.progress or [],
+        "pending_questions": report.questions.filter(status__in=["queued", "answering"]).count(),
+    })
 
 
 @csrf_exempt  # authenticated by bearer token, not cookies
@@ -803,6 +872,13 @@ def report_detail(request, report_id):
         "page_title": f"Report: {report.title}",
         # Pretty JSON, auto-escaped by the template (json_script rendered nothing visible)
         "findings_json": json.dumps(report.findings, indent=2, ensure_ascii=False) if report.findings else "",
+        "questions": list(report.questions.all()),
+        "ask": ai_agent.question_availability(report),
+        "max_question_chars": ai_agent.MAX_QUESTION_CHARS,
+        # Server-side elapsed time, so the live timer doesn't depend on the visitor's clock
+        "elapsed_seconds": max(int((timezone.now() - report.created_at).total_seconds()), 0),
+        "generation_time": _duration_text(report.completed_at - report.created_at)
+        if report.completed_at and report.source == Report.Source.BUILTIN_AI else "",
     }
     return render(request, "report_detail.html", context)
 
@@ -849,70 +925,3 @@ def report_download(request, report_id):
     filename = f"scanx-report-{report.id}.md"
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
-
-# =====================================================================
-# MCP HTTP Server Management
-# =====================================================================
-
-def _is_local_request(request) -> bool:
-    return request.META.get("REMOTE_ADDR") in ("127.0.0.1", "::1")
-
-
-@require_http_methods(["GET"])
-def mcp_http_status(request):
-    """Check if MCP HTTP server is running on port 8001"""
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(2)
-        result = sock.connect_ex(('127.0.0.1', 8001))
-        sock.close()
-        running = result == 0
-    except Exception:
-        running = False
-
-    # Get VPS IP for external connection
-    vps_ip = getattr(settings, 'MCP_VPS_IP', None)
-    if not vps_ip:
-        # Try to detect external IP
-        try:
-            vps_ip = socket.gethostbyname(socket.gethostname())
-        except Exception:
-            vps_ip = 'your-vps-ip'
-
-    return JsonResponse({
-        'running': running,
-        'url': f'http://{vps_ip}:8001/mcp' if running else None,
-        'port': 8001,
-    })
-
-
-@require_http_methods(["POST"])
-def mcp_http_start(request):
-    """Start MCP HTTP server in background (only from the local machine)."""
-    # The app has no login system, so the old @login_required just 404'd.
-    # Spawning a network-facing server must not be open to remote visitors.
-    if not _is_local_request(request):
-        return JsonResponse(
-            {"status": "error", "message": "MCP server can only be started from localhost."},
-            status=403,
-        )
-    try:
-        # Check if already running
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(2)
-        result = sock.connect_ex(('127.0.0.1', 8001))
-        sock.close()
-        if result == 0:
-            return JsonResponse({'status': 'already_running', 'message': 'MCP HTTP server is already running'})
-
-        # Start server in background
-        subprocess.Popen([
-            sys.executable, 'manage.py', 'mcp_server_http',
-            '--host', '0.0.0.0',
-            '--port', '8001'
-        ], cwd=settings.BASE_DIR, start_new_session=True)
-
-        return JsonResponse({'status': 'starting', 'message': 'MCP HTTP server starting...'})
-    except Exception as e:
-        logger.exception("Failed to start MCP HTTP server")
-        return JsonResponse({'status': 'error', 'message': 'Failed to start MCP server; see server log.'}, status=500)

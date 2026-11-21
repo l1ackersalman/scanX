@@ -17,6 +17,7 @@ from collections import defaultdict, deque
 
 from django.conf import settings
 from django.db import connection
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from django.core.paginator import Paginator
 
@@ -123,14 +124,7 @@ class ScanExecutor:
                     continue
                 try:
                     entry = json.loads(line)
-                    tech_raw = entry.get("tech-detect") or entry.get("tech") or entry.get("technologies") or entry.get("tech_detect") or entry.get("technology") or entry.get("webserver") or entry.get("server") or entry.get("http-server")
-                    tech_list = []
-                    if isinstance(tech_raw, list):
-                        tech_list = [str(t).strip() for t in tech_raw if str(t).strip()]
-                    elif isinstance(tech_raw, dict):
-                        tech_list = [f"{k}:{v}" if v else k for k, v in tech_raw.items() if k]
-                    elif isinstance(tech_raw, str) and tech_raw.strip():
-                        tech_list = [t.strip() for t in tech_raw.split(",") if t.strip()]
+                    tech_list = _extract_tech_from_entry(entry)  # one parser for the whole app
                     # Get IP from host_ip, ip, or first element of 'a' array
                     ip_val = entry.get("host_ip") or entry.get("ip") or (entry.get("a", [""])[0] if entry.get("a") else "")
                     results.append({
@@ -148,15 +142,9 @@ class ScanExecutor:
         return results
 
     def _find_script_output_dir(self, cwd: Path) -> Path | None:
-        """Find the subdirectory created by scanx.sh inside cwd."""
-        # The script creates a directory named after the domain (or domain-XX)
-        for item in cwd.iterdir():
-            if item.is_dir() and item.name.startswith(self.scan.domain.replace(".", "-")):
-                return item
-            # Also check for exact domain match
-            if item.is_dir() and item.name == self.scan.domain:
-                return item
-        return None
+        """The folder scanx.sh creates in this scan's private cwd: named after the domain."""
+        out = cwd / self.scan.domain
+        return out if out.is_dir() else None
 
     def _kill_process_group(self) -> None:
         """
@@ -308,6 +296,17 @@ class ScanExecutor:
                     stats = self._parse_statistics(script_out_dir)
                     httpx_results = self._parse_httpx_results(script_out_dir)
                     stats["httpx_results"] = httpx_results
+                    # scanx.sh hides tool errors, so a broken step still exits 0.
+                    # Live hosts but no HTTP output means httpx did not run.
+                    httpx_file = script_out_dir / "httpx.json"
+                    if (stats.get("live_subdomains") or 0) > 0 and (
+                        not httpx_file.exists() or httpx_file.stat().st_size == 0
+                    ):
+                        stats["error_message"] = (
+                            "Warning: httpx produced no output although live hosts were found, "
+                            "so HTTP results are missing. Check that httpx is installed "
+                            "(python manage.py check_tools) and scan again."
+                        )
                     self.scan.mark_completed(**stats)
                     logger.info(f"Scan {self.scan.id} completed successfully")
                 else:
@@ -339,15 +338,26 @@ class ScanExecutor:
         self._kill_process_group()
 
 
-def run_scan_in_background(scan: Scan) -> threading.Thread:
-    """
-    Run a scan in a background thread.
-    Returns the thread object for monitoring.
-    """
-    executor = ScanExecutor(scan)
-    thread = threading.Thread(target=executor.run, daemon=True)
-    thread.start()
-    return thread
+# Files a user may download for a scan: published name → (folder, file, description).
+# A fixed list, so a crafted URL can never reach any other file on the server.
+SCAN_DOWNLOADS = {
+    "subdomains.txt": ("domain", "alldomains.txt", "All subdomains found"),
+    "live.txt": ("domain", "live.txt", "Subdomains that resolve (live)"),
+    "httpx.json": ("domain", "httpx.json", "HTTP results: status, title, tech, IP, CNAME (JSON lines)"),
+    "scanner-output.log": ("scan", "live.log", "Full scanner output"),
+}
+
+
+def get_scan_files(scan: Scan) -> list[dict]:
+    """Downloadable files that exist for this scan: [{name, description, path, size}]."""
+    base = settings.SCANX_DATA_DIR / str(scan.id)
+    folders = {"scan": base, "domain": base / scan.domain}
+    files = []
+    for name, (folder, filename, description) in SCAN_DOWNLOADS.items():
+        path = folders[folder] / filename
+        if path.is_file():
+            files.append({"name": name, "description": description, "path": path, "size": path.stat().st_size})
+    return files
 
 
 def get_log_lines(scan_id: str, since_offset: int = 0) -> tuple[list[str], int, str]:
@@ -381,46 +391,6 @@ def get_log_lines(scan_id: str, since_offset: int = 0) -> tuple[list[str], int, 
     except Exception as e:
         logger.error(f"Failed to read log for {scan_id}: {e}")
         return [], since_offset, scan.status
-
-
-def get_scan_artifacts(scan: Scan) -> dict[str, Path]:
-    """
-    Get paths to scan artifact files if they exist.
-    Returns dict of artifact_name -> Path.
-    """
-    artifacts = {}
-    if not scan.output_dir:
-        return artifacts
-
-    # The script creates a subdirectory named after the domain
-    base = settings.SCANX_DATA_DIR / scan.output_dir
-    script_out_dir = None
-    for item in base.iterdir():
-        if item.is_dir() and (item.name == scan.domain or item.name.startswith(scan.domain.replace(".", "-"))):
-            script_out_dir = item
-            break
-
-    if not script_out_dir:
-        return artifacts
-
-    artifact_files = {
-        "alldomains.txt": "alldomains.txt",
-        "live.txt": "live.txt",
-        "httpx.json": "httpx.json",
-        "report.txt": "report.txt",  # This is in parent dir per script
-    }
-
-    for name, filename in artifact_files.items():
-        path = script_out_dir / filename
-        if path.exists():
-            artifacts[name] = path
-
-    # Also check for report.txt in parent (script writes to ../report.txt)
-    parent_report = base / "report.txt"
-    if parent_report.exists():
-        artifacts["report.txt"] = parent_report
-
-    return artifacts
 
 
 # ---------------------------------------------------------------------------
@@ -533,19 +503,31 @@ def get_assets_overview() -> dict:
     """
     total_programs = Program.objects.count()
 
-    total_scans = Scan.objects.count()
-    completed_scans = Scan.objects.filter(status=Scan.Status.COMPLETED).count()
-    running_scans = Scan.objects.filter(status=Scan.Status.RUNNING).count()
-    failed_scans = Scan.objects.filter(status=Scan.Status.FAILED).count()
-    pending_scans = Scan.objects.filter(status=Scan.Status.PENDING).count()
-    cancelled_scans = Scan.objects.filter(status=Scan.Status.CANCELLED).count()
-
-    total_targets = Scan.objects.values("domain").distinct().count()
-
-    total_subdomains = sum(s.total_subdomains or 0 for s in Scan.objects.all())
-    live_subdomains = sum(s.live_subdomains or 0 for s in Scan.objects.all())
-    http_success = sum(s.http_success or 0 for s in Scan.objects.all())
-    http_failed = sum(s.http_failed or 0 for s in Scan.objects.all())
+    # One aggregate query instead of loading every scan (and its JSON results) 4 times
+    counts = Scan.objects.aggregate(
+        total_scans=Count("id"),
+        completed_scans=Count("id", filter=Q(status=Scan.Status.COMPLETED)),
+        running_scans=Count("id", filter=Q(status=Scan.Status.RUNNING)),
+        failed_scans=Count("id", filter=Q(status=Scan.Status.FAILED)),
+        pending_scans=Count("id", filter=Q(status=Scan.Status.PENDING)),
+        cancelled_scans=Count("id", filter=Q(status=Scan.Status.CANCELLED)),
+        total_targets=Count("domain", distinct=True),
+        total_subdomains=Sum("total_subdomains"),
+        live_subdomains=Sum("live_subdomains"),
+        http_success=Sum("http_success"),
+        http_failed=Sum("http_failed"),
+    )
+    total_scans = counts["total_scans"]
+    completed_scans = counts["completed_scans"]
+    running_scans = counts["running_scans"]
+    failed_scans = counts["failed_scans"]
+    pending_scans = counts["pending_scans"]
+    cancelled_scans = counts["cancelled_scans"]
+    total_targets = counts["total_targets"]
+    total_subdomains = counts["total_subdomains"] or 0
+    live_subdomains = counts["live_subdomains"] or 0
+    http_success = counts["http_success"] or 0
+    http_failed = counts["http_failed"] or 0
 
     return {
         "total_programs": total_programs,
@@ -626,19 +608,40 @@ def get_programs_with_stats() -> list[dict]:
     """
     Return all programs with aggregate statistics for the programs listing page.
     """
-    programs_list = Program.objects.all().order_by("-created_at")
+    # Two queries in total (was ~8 per organization, plus every scan's JSON).
+    # Same numbers as get_program_statistics: per-domain MAX, summed per program.
+    rows = Scan.objects.filter(program__isnull=False).values(
+        "program_id", "domain", "status", "completed_at",
+        "total_subdomains", "live_subdomains", "http_success",
+    )
+    per_program: dict[int, dict] = defaultdict(lambda: {
+        "domains": defaultdict(lambda: [0, 0, 0]), "scans": 0, "completed": 0, "last": None,
+    })
+    for r in rows:
+        p = per_program[r["program_id"]]
+        p["scans"] += 1
+        d = p["domains"][r["domain"]]
+        d[0] = max(d[0], r["total_subdomains"] or 0)
+        d[1] = max(d[1], r["live_subdomains"] or 0)
+        d[2] = max(d[2], r["http_success"] or 0)
+        if r["status"] == Scan.Status.COMPLETED:
+            p["completed"] += 1
+            if r["completed_at"] and (p["last"] is None or r["completed_at"] > p["last"]):
+                p["last"] = r["completed_at"]
+
     results = []
-    for program in programs_list:
-        stats = get_program_statistics(program)
+    for program in Program.objects.all().order_by("-created_at"):
+        p = per_program.get(program.id)
+        domains = p["domains"].values() if p else []
         results.append(
             {
                 "scan": program,
-                "total_subdomains": stats["total_subdomains"],
-                "live_subdomains": stats["live_subdomains"],
-                "http_success": stats["http_success"],
-                "scan_count": stats["total_scans"],
-                "completed_scans": stats["completed_scans"],
-                "last_scanned": stats["last_scanned"],
+                "total_subdomains": sum(d[0] for d in domains),
+                "live_subdomains": sum(d[1] for d in domains),
+                "http_success": sum(d[2] for d in domains),
+                "scan_count": p["scans"] if p else 0,
+                "completed_scans": p["completed"] if p else 0,
+                "last_scanned": p["last"] if p else None,
             }
         )
     return results
@@ -697,6 +700,8 @@ def get_technology_subdomains(
         "technology": technology,
         "subdomain_page": page,
         "total_subdomains": len(matching),
+        # Across ALL matches, not just the current page
+        "distinct_programs": len({m["program"].id for m in matching if m["program"]}),
         "sort_by": "alpha",
     }
 

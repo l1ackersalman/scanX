@@ -9,6 +9,7 @@ long-running scans. Do not run the scanner directly inside a normal Django
 HTTP request."
 """
 import logging
+import os
 import signal
 import sys
 import threading
@@ -68,6 +69,15 @@ class Command(BaseCommand):
         if max_scans:
             self.stdout.write(f"Max scans: {max_scans}")
 
+        # Only one worker may run: SQLite ignores row locks, so two workers could
+        # run the same scan, and a second one would fail the first one's scans.
+        if not self._acquire_single_worker_lock():
+            self.stderr.write(self.style.ERROR(
+                "Another scanX worker is already running (lock held on "
+                f"{self._lock_path}). Stop it first, or just use the running one."
+            ))
+            sys.exit(1)
+
         self._recover_interrupted_scans()
         self._start_ai_thread(interval)
 
@@ -103,6 +113,25 @@ class Command(BaseCommand):
         if self.current_executor:
             self.current_executor.stop()
 
+    def _acquire_single_worker_lock(self) -> bool:
+        """
+        Hold an exclusive lock on SCANX_DATA_DIR/.worker.lock for the life of the
+        process. The OS releases it automatically if the worker dies.
+        """
+        import fcntl
+        from django.conf import settings
+
+        self._lock_path = settings.SCANX_DATA_DIR / ".worker.lock"
+        self._lock_file = open(self._lock_path, "w")
+        try:
+            fcntl.flock(self._lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            self._lock_file.close()
+            return False
+        self._lock_file.write(str(os.getpid()))
+        self._lock_file.flush()
+        return True
+
     def _start_ai_thread(self, interval: int) -> None:
         """
         Built-in AI reports run in their own thread so a long scan never
@@ -116,7 +145,7 @@ class Command(BaseCommand):
         def loop():
             while self.running:
                 try:
-                    worked = ai_agent.process_next_report()
+                    worked = ai_agent.process_next_job()  # reports, then questions
                 except Exception:
                     logger.exception("AI report loop error")
                     worked = False

@@ -6,6 +6,7 @@ All secrets should come from environment variables via .env file.
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -179,6 +180,8 @@ NVIDIA_BASE_URL = os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidi
 AI_DAILY_LIMIT = int(os.environ.get("AI_DAILY_LIMIT", "30"))             # built-in reports per day, all users
 AI_SCAN_COOLDOWN_MINUTES = int(os.environ.get("AI_SCAN_COOLDOWN_MINUTES", "10"))  # per scan
 AI_MAX_TURNS = int(os.environ.get("AI_MAX_TURNS", "25"))                 # tool-call rounds per report
+AI_QUESTION_DAILY_LIMIT = int(os.environ.get("AI_QUESTION_DAILY_LIMIT", "100"))  # "Ask the report" per day
+AI_QUESTIONS_PER_REPORT = int(os.environ.get("AI_QUESTIONS_PER_REPORT", "20"))
 AI_JOB_TIMEOUT = int(os.environ.get("AI_JOB_TIMEOUT", "600"))            # seconds per report
 
 # Maximum scans waiting in the queue. The app is public, so this stops one
@@ -222,7 +225,8 @@ LOGGING = {
     },
     "loggers": {
         "scanner": {
-            "handlers": ["console", "file"],
+            # Test runs log fake scans/errors; keep them out of the real scanx.log
+            "handlers": ["console"] if "test" in sys.argv[1:2] else ["console", "file"],
             "level": "DEBUG",
             "propagate": False,
         },

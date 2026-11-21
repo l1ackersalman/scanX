@@ -1,0 +1,6 @@
+{# Risk badge from an AI report's findings. Needs `level` (critical|high|medium|low|none|""); optional `report_id`. #}
+{% if level %}
+  {% if report_id %}<a href="{% url 'scanner:report_detail' report_id %}" class="risk-badge risk-{{ level }}" title="Highest severity in the AI report">{% else %}<span class="risk-badge risk-{{ level }}" title="Highest severity in the AI report">{% endif %}
+    {% if level == "none" %}No risks found{% else %}Risk: {{ level|capfirst }}{% endif %}
+  {% if report_id %}</a>{% else %}</span>{% endif %}
+{% endif %}

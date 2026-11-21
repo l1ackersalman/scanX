@@ -26,6 +26,10 @@
   .scan-facts code { font-family: var(--sx-font-mono); font-size: var(--sx-text-xs); }
   .scan-actions { display: flex; flex-wrap: wrap; gap: var(--sx-space-2); margin-left: auto; }
   .scan-actions form { margin: 0; }
+  .download-files { list-style: none; margin: 0; padding: 0; border: 1px solid var(--sx-border); border-radius: var(--sx-radius-card); background: var(--sx-surface); }
+  .download-files li { display: flex; flex-wrap: wrap; gap: var(--sx-space-1) var(--sx-space-3); align-items: baseline; padding: var(--sx-space-3) var(--sx-space-4); border-bottom: 1px solid var(--sx-border); font-size: var(--sx-text-sm); }
+  .download-files li:last-child { border-bottom: 0; }
+  .download-files a { font-family: var(--sx-font-mono); font-weight: 500; }
   .ai-reason { flex-basis: 100%; margin: 0; text-align: right; font-size: var(--sx-text-xs); color: var(--sx-text-secondary); }
   .btn-stop { color: var(--sx-danger); border-color: rgba(227, 93, 106, 0.5); }
   .btn-stop:hover { border-color: var(--sx-danger); }
@@ -131,6 +135,7 @@
     <div class="scan-title-row">
       <h1>{{ scan.domain }}</h1>
       <span id="scan-status-badge"><span class="status-badge status-{{ scan.status }}">{{ scan.get_status_display }}</span></span>
+      {% if latest_ai_report.risk_level %}{% include "partials/risk_badge.html" with level=latest_ai_report.risk_level report_id=latest_ai_report.id %}{% endif %}
       <div class="scan-actions">
         {% if scan.status == "pending" or scan.status == "running" %}
           <form method="post" action="{% url 'scanner:stop_scan' scan.id %}"
@@ -151,6 +156,19 @@
               <a href="{% url 'scanner:report_detail' ai.recent_report.id %}" class="btn-ghost">View AI report</a>
             {% else %}
               <button type="button" class="btn-ghost" disabled title="{{ ai.reason }}">Generate AI report</button>
+            {% endif %}
+          {% endif %}
+          {% if ai_change %}
+            {% if ai_change.ok %}
+            <form method="post" action="{% url 'scanner:ai_report_create' %}">
+              {% csrf_token %}
+              <input type="hidden" name="scan" value="{{ scan.id }}">
+              <input type="hidden" name="type" value="change_analysis">
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <button type="submit" class="btn-ghost" title="AI explains what changed since the previous scan of {{ scan.domain }}">What changed? (AI)</button>
+            </form>
+            {% elif ai_change.recent_report %}
+              <a href="{% url 'scanner:report_detail' ai_change.recent_report.id %}" class="btn-ghost">View change analysis</a>
             {% endif %}
           {% endif %}
           <form method="post" action="{% url 'scanner:start_scan' %}">
@@ -187,6 +205,12 @@
           Check the scanner output below for the step that failed.
         {% endif %}
       </p>
+    </div>
+  {% elif scan.status == "completed" and scan.error_message %}
+    <div class="notice notice-neutral" role="note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p class="notice-title">Completed with a warning</p>
+      <p class="notice-body">{{ scan.error_message }}</p>
     </div>
   {% elif scan.status == "cancelled" %}
     <div class="notice notice-neutral" role="status">
@@ -349,6 +373,23 @@
       <dt>Finished</dt><dd>{{ scan.completed_at|date:"M j, Y, g:i:s A"|default:"—" }}</dd>
       <dt>Scan ID</dt><dd><code>{{ scan.id }}</code></dd>
     </dl>
+  </section>
+  {% endif %}
+
+  {% if downloads %}
+  <section aria-labelledby="downloads-title">
+    <div class="results-head">
+      <h2 id="downloads-title">Downloads</h2>
+      <a href="{% url 'scanner:scan_download_all' scan.id %}" class="btn-ghost btn-sm" style="margin-left:auto">Download all (.zip)</a>
+    </div>
+    <ul class="download-files">
+      {% for f in downloads %}
+      <li>
+        <a href="{% url 'scanner:scan_download' scan.id f.name %}" download>{{ f.name }}</a>
+        <span class="muted">{{ f.description }} · {{ f.size|filesizeformat }}</span>
+      </li>
+      {% endfor %}
+    </ul>
   </section>
   {% endif %}
 

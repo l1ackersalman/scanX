@@ -96,20 +96,6 @@ class Scan(models.Model):
             return f"{seconds // 60}m"
         return f"{seconds}s"
 
-    @property
-    def output_path(self):
-        """Get absolute path to scan output directory."""
-        from django.conf import settings
-        if self.output_dir:
-            return settings.SCANX_DATA_DIR / self.output_dir
-        return None
-
-    def get_artifact_path(self, filename: str):
-        """Get path to a specific artifact file."""
-        if self.output_path:
-            return self.output_path / self.domain / filename
-        return None
-
     def mark_running(self, output_dir: str = ""):
         """Mark scan as running."""
         self.status = self.Status.RUNNING
@@ -221,7 +207,15 @@ class Report(models.Model):
         VULNERABILITY = "vulnerability", "Vulnerability Assessment"
         TECHNOLOGY_EXPOSURE = "technology_exposure", "Technology Exposure"
         ATTACK_VECTOR = "attack_vector", "Attack Vector Analysis"
+        CHANGE_ANALYSIS = "change_analysis", "Change Analysis"
         CUSTOM = "custom", "Custom Analysis"
+
+    class Risk(models.TextChoices):
+        CRITICAL = "critical", "Critical"
+        HIGH = "high", "High"
+        MEDIUM = "medium", "Medium"
+        LOW = "low", "Low"
+        NONE = "none", "No findings"
     
     class Status(models.TextChoices):
         QUEUED = "queued", "Queued"
@@ -259,6 +253,22 @@ class Report(models.Model):
         db_index=True,
     )
     generated_by = models.CharField(max_length=100, default="MCP Agent")  # AI agent identifier
+    # Live steps of the built-in AI while it works: [{"at": seconds, "text": "..."}]
+    progress = models.JSONField(default=list, blank=True)
+    # Highest severity in findings.attack_vectors, kept in sync on save ("" = not assessed)
+    risk_level = models.CharField(max_length=10, choices=Risk.choices, blank=True, default="", db_index=True)
+
+    def save(self, *args, **kwargs):
+        from .risk import risk_summary
+        self.risk_level = risk_summary(self.findings)["level"] if self.status == self.Status.COMPLETED else ""
+        if "update_fields" in kwargs and kwargs["update_fields"] is not None:
+            kwargs["update_fields"] = set(kwargs["update_fields"]) | {"risk_level"}
+        super().save(*args, **kwargs)
+
+    @property
+    def risk(self) -> dict:
+        from .risk import risk_summary
+        return risk_summary(self.findings)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     
@@ -284,3 +294,27 @@ class Report(models.Model):
         self.status = self.Status.FAILED
         self.content = f"Generation failed: {error}"
         self.save()
+
+
+class ReportQuestion(models.Model):
+    """A follow-up question about a report, answered by the built-in AI."""
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        ANSWERING = "answering", "Answering"
+        ANSWERED = "answered", "Answered"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name="questions")
+    question = models.TextField()
+    answer = models.TextField(blank=True, default="")
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.QUEUED, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    answered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return self.question[:60]
